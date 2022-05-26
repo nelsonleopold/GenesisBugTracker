@@ -15,7 +15,7 @@ namespace GenesisBugTracker.Models
         public string? Name { get; set; }
 
         [Required]
-        [StringLength(240, ErrorMessage = "The {0} must be at least {2} and at most {1} characters long.", MinimumLength = 2)]
+        [StringLength(2000, ErrorMessage = "The {0} must be at least {2} and at most {1} characters long.", MinimumLength = 2)]
         [DisplayName("Project Description")]
         public string? Description { get; set; }
 
@@ -55,7 +55,7 @@ namespace GenesisBugTracker.Models
         // Navigational Properties
         public virtual Company? Company { get; set; }
 
-        public virtual ProjectPriority? Priority { get; set; }
+        public virtual ProjectPriority? ProjectPriority { get; set; }
 
         // Navigational Collections
         public virtual ICollection<BTUser> Members { get; set; } = new HashSet<BTUser>();
