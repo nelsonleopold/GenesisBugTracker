@@ -35,7 +35,8 @@ namespace GenesisBugTracker.Services
         {
             try
             {
-                _context.Update(project.Archived == true);
+                project.Archived = true;
+                _context.Update(project);
                 await _context.SaveChangesAsync();
             }
             catch (Exception)
