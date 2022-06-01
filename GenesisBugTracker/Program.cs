@@ -1,6 +1,7 @@
 using GenesisBugTracker.Data;
 using GenesisBugTracker.Models;
 using GenesisBugTracker.Services;
+using GenesisBugTracker.Services.Factories;
 using GenesisBugTracker.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +18,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentity<BTUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddDefaultTokenProviders()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddClaimsPrincipalFactory<BTUserClaimsPrincipalFactory>()
     .AddDefaultUI()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddDefaultTokenProviders();
 
 // Add Custom Services
 builder.Services.AddScoped<IBTProjectService, BTProjectService>();

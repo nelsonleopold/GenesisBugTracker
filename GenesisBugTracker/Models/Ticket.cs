@@ -23,7 +23,7 @@ namespace GenesisBugTracker.Models
 
         [DataType(DataType.Date)]
         [DisplayName("Date Updated")]
-        public DateTime Updated { get; set; }
+        public DateTime? Updated { get; set; }
 
         public bool Archived { get; set; }
 

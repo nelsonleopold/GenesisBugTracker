@@ -14,6 +14,31 @@ namespace GenesisBugTracker.Services
             _context = context;
         }
 
+        #region Add New Ticket Async
+        public async Task AddNewTicketAsync(Ticket ticket)
+        {
+            try
+            {
+                _context.Add(ticket);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region Archive Ticket Async
+        public async Task ArchiveTicketAsync(Ticket ticket)
+        {
+            ticket.Archived = true;
+            await UpdateTicketAsync(ticket);
+        }
+        #endregion
+
+        #region Get All Tickets By CompanyId Async
         public async Task<List<Ticket>> GetAllTicketsByCompanyIdAsync(int companyId)
         {
             List<Ticket> tickets = await _context.Projects.Include(p => p.Tickets)
@@ -29,8 +54,52 @@ namespace GenesisBugTracker.Services
                                                             .Include(t => t.TicketType)
                                                             .Include(t => t.Project)
                                                           .ToListAsync();
-                           
+
             return tickets;
         }
+        #endregion
+
+        #region Update Ticket Async
+        public async Task UpdateTicketAsync(Ticket ticket)
+        {
+            try
+            {
+                _context.Update(ticket);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region Get Ticket By Id Async
+        public async Task<Ticket> GetTicketByIdAsync(int ticketId)
+        {
+            try
+            {
+                Ticket ticket = await _context.Tickets.Where(t => t.Id == ticketId)
+                                              .Include(t => t.DeveloperUser)
+                                              .Include(t => t.Project)
+                                              .Include(t => t.SubmitterUser)
+                                              .Include(t => t.TicketPriority)
+                                              .Include(t => t.TicketStatus)
+                                              .Include(t => t.TicketType)
+                                              .Include(t => t.Comments)
+                                              .Include(t => t.Attachments)
+                                              .Include(t => t.Notifications)
+                                              .Include(t => t.TicketHistories)
+                                              .FirstAsync();
+                return ticket;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
     }
 }

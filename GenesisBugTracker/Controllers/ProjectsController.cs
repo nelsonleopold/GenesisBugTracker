@@ -10,6 +10,9 @@ using GenesisBugTracker.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using GenesisBugTracker.Services.Interfaces;
+using GenesisBugTracker.Extensions;
+using GenesisBugTracker.Models.ViewModels;
+using GenesisBugTracker.Models.Enums;
 
 namespace GenesisBugTracker.Controllers
 {
@@ -18,22 +21,24 @@ namespace GenesisBugTracker.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<BTUser> _userManager;
         private readonly IBTProjectService _projectService;
+        private readonly IBTRolesService _rolesService;
 
         public ProjectsController(ApplicationDbContext context,
                                   UserManager<BTUser> userManager,
-                                  IBTProjectService projectService)
+                                  IBTProjectService projectService,
+                                  IBTRolesService rolesService)
         {
             _context = context;
             _userManager = userManager;
             _projectService = projectService;
+            _rolesService = rolesService;
         }
 
         // GET: Projects
         [Authorize]
         public async Task<IActionResult> Index()
         {
-            BTUser bTUser = await _userManager.GetUserAsync(User);
-            int companyId = bTUser.CompanyId;
+            int companyId = User.Identity!.GetCompanyId();
 
             List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
 
@@ -47,8 +52,9 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
+            int companyId = User.Identity!.GetCompanyId();
 
-            Project project = await _projectService.GetProjectByIdAsync(id.GetValueOrDefault());
+            Project project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
             if (project == null)
             {
                 return NotFound();
@@ -58,11 +64,14 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name");
-            ViewData["ProjectPriorityId"] = new SelectList(_context.ProjectPriorities, "Id", "Name");
-            return View();
+            AddProjectWithPMViewModel model = new();
+            int companyId = User.Identity!.GetCompanyId();
+
+            model.PMList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.ProjectManager), companyId), "Id", "FullName");
+            model.PriorityList = new SelectList(_context.ProjectPriorities, "Id", "Name");
+            return View(model);
         }
 
         // POST: Projects/Create
@@ -70,17 +79,31 @@ namespace GenesisBugTracker.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,CompanyId,Name,Description,Created,StartDate,EndDate,ProjectPriorityId,ImageFileName,ImageFileData,ImageContentType,Archived")] Project project)
+        public async Task<IActionResult> Create(AddProjectWithPMViewModel model)
         {
             if (ModelState.IsValid)
             {
                 // Use custom service methods
-                await _projectService.AddNewProjectAsync(project);
+                model.Project!.CompanyId = User.Identity!.GetCompanyId();
+                model.Project.Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                model.Project.StartDate = DateTime.SpecifyKind(model.Project.StartDate, DateTimeKind.Utc);
+                model.Project.EndDate = DateTime.SpecifyKind(model.Project.EndDate, DateTimeKind.Utc);
+
+                await _projectService.AddNewProjectAsync(model.Project);
+
+                // TODO: Allow Admin to add ProjectManager
+                if (!string.IsNullOrEmpty(model.PMId))
+                {
+                    await _projectService.AddProjectManagerAsync(model.PMId, model.Project.Id);
+                }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", project.CompanyId);
-            ViewData["ProjectPriorityId"] = new SelectList(_context.ProjectPriorities, "Id", "Name", project.ProjectPriorityId);
-            return View(project);
+            int companyId = User.Identity!.GetCompanyId();
+
+            model.PMList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.ProjectManager), companyId), "Id", "FullName");
+            model.PriorityList = new SelectList(_context.ProjectPriorities, "Id", "Name");
+            return View(model.Project);
         }
 
         // GET: Projects/Edit/5
@@ -90,14 +113,16 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
+            int companyId = User.Identity!.GetCompanyId();
 
-            //var project = await _context.Projects.FindAsync(id);
-            Project project = await _projectService.GetProjectByIdAsync(id.GetValueOrDefault());
+            // var project = await _context.Projects.FindAsync(id);
+            Project project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
+
             if (project == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", project.CompanyId);
+            // ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", project.CompanyId);
             ViewData["ProjectPriorityId"] = new SelectList(_context.ProjectPriorities, "Id", "Name", project.ProjectPriorityId);
             return View(project);
         }
@@ -118,6 +143,9 @@ namespace GenesisBugTracker.Controllers
             {
                 try
                 {
+                    project.Created = DateTime.SpecifyKind(project.Created.Value, DateTimeKind.Utc);
+                    project.StartDate = DateTime.SpecifyKind(project.StartDate, DateTimeKind.Utc);
+                    project.EndDate = DateTime.SpecifyKind(project.EndDate, DateTimeKind.Utc);
                     // Use custom service methods
                     await _projectService.UpdateProjectAsync(project);
                 }
@@ -134,7 +162,7 @@ namespace GenesisBugTracker.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", project.CompanyId);
+            // ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "Name", project.CompanyId);
             ViewData["ProjectPriorityId"] = new SelectList(_context.ProjectPriorities, "Id", "Name", project.ProjectPriorityId);
             return View(project);
         }
@@ -146,12 +174,9 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
+            int companyId = User.Identity!.GetCompanyId();
 
-            //var project = await _context.Projects
-            //    .Include(p => p.Company)
-            //    .Include(p => p.ProjectPriority)
-            //    .FirstOrDefaultAsync(m => m.Id == id);
-            Project project = await _projectService.GetProjectByIdAsync(id.GetValueOrDefault());
+            Project project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
             if (project == null)
             {
                 return NotFound();

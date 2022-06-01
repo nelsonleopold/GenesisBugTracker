@@ -25,11 +25,11 @@ namespace GenesisBugTracker.Models
 
         [DataType(DataType.Date)]
         [DisplayName("Project Start Date")]
-        public DateTime? StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         [DataType(DataType.Date)]
         [DisplayName("Project End Date")]
-        public DateTime? EndDate { get; set; }
+        public DateTime EndDate { get; set; }
 
         public int ProjectPriorityId { get; set; }
 
