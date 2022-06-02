@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using GenesisBugTracker.Extensions;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -26,7 +27,8 @@ namespace GenesisBugTracker.Models
 
         [NotMapped]
         [DataType(DataType.Upload)]
-        // TODO: Add Custom Attributes
+        [MaxFileSize(1024 * 1024)]
+        [AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".svg", ".doc", ".docx", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".html"})]
         public IFormFile? FormFile { get; set; }
 
         [DisplayName("File Name")]

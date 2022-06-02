@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using GenesisBugTracker.Extensions;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -36,6 +37,7 @@ namespace GenesisBugTracker.Models
 
         [NotMapped]
         [DataType(DataType.Upload)]
+        [MaxFileSize(1024 * 1024)]
         public IFormFile? ImageFormFile { get; set; }
 
         [DisplayName("File Name")]
