@@ -38,6 +38,26 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Get All Archived Tickets Async
+        public async Task<List<Ticket>> GetAllArchivedTicketsAsync(int companyId)
+        {
+            try
+            {
+                List<Ticket> archivedTickets = await _context.Projects.Include(p => p.Tickets)
+                                                         .Where(p => p.CompanyId == companyId)
+                                                         .SelectMany(p => p.Tickets)
+                                                            .Where(t => t.Archived == true)
+                                                         .ToListAsync();
+                return archivedTickets;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
         #region Get All Tickets By CompanyId Async
         public async Task<List<Ticket>> GetAllTicketsByCompanyIdAsync(int companyId)
         {
@@ -56,22 +76,6 @@ namespace GenesisBugTracker.Services
                                                           .ToListAsync();
 
             return tickets;
-        }
-        #endregion
-
-        #region Update Ticket Async
-        public async Task UpdateTicketAsync(Ticket ticket)
-        {
-            try
-            {
-                _context.Update(ticket);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
         }
         #endregion
 
@@ -101,5 +105,36 @@ namespace GenesisBugTracker.Services
             }
         }
         #endregion
+
+        public async Task RestoreTicketAsync(Ticket ticket)
+        {
+            try
+            {
+                ticket.Archived = false;
+                await UpdateTicketAsync(ticket);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        #region Update Ticket Async
+        public async Task UpdateTicketAsync(Ticket ticket)
+        {
+            try
+            {
+                _context.Update(ticket);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+      
     }
 }

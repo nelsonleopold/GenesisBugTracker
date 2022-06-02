@@ -45,6 +45,18 @@ namespace GenesisBugTracker.Controllers
             return View(tickets);
         }
 
+        // GET: Tickets/ArchivedTickets
+        [Authorize]
+        public async Task<IActionResult> ArchivedTickets()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Ticket> tickets = await _ticketService.GetAllArchivedTicketsAsync(companyId);
+
+
+            return View(tickets);
+        }
+
         // GET: Tickets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -76,11 +88,18 @@ namespace GenesisBugTracker.Controllers
         public async Task<IActionResult> Create()
         {
             int companyId = User.Identity!.GetCompanyId();
-            //ViewData["DeveloperUserId"] = new SelectList(_context.Users, "Id", "Id");
-            ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyIdAsync(companyId), "Id", "Name");
-            //ViewData["SubmitterUserId"] = new SelectList(_context.Users, "Id", "Id");
+            string userId = _userManager.GetUserId(User);
+
+            if (User.IsInRole(nameof(BTRoles.Admin)))
+            {
+                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyIdAsync(companyId), "Id", "Name");
+            }
+            else
+            {
+                ViewData["ProjectId"] = new SelectList(await _projectService.GetUserProjectsAsync(userId), "Id", "Name");
+            }
+            
             ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name");
-            //ViewData["TicketStatusId"] = new SelectList(_context.TicketStatuses, "Id", "Name");
             ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name");
             return View();
         }
@@ -92,6 +111,7 @@ namespace GenesisBugTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,Description,Updated,Archived,ArchivedByProject,ProjectId,TicketPriorityId,TicketStatusId,TicketTypeId,SubmitterUserId,DeveloperUserId")] Ticket ticket)
         {
+            ModelState.Remove("SubmitterUserId");
             if (ModelState.IsValid)
             {
                 ticket.Created = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
@@ -106,13 +126,21 @@ namespace GenesisBugTracker.Controllers
                 await _ticketService.AddNewTicketAsync(ticket);
                 return RedirectToAction(nameof(Index));
             }
+
             int companyId = User.Identity!.GetCompanyId();
-            //ViewData["DeveloperUserId"] = new SelectList(_context.Users, "Id", "Id", ticket.DeveloperUserId);
-            ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyIdAsync(companyId), "Id", "Name", ticket.ProjectId);
-            //ViewData["SubmitterUserId"] = new SelectList(_context.Users, "Id", "Id", ticket.SubmitterUserId);
-            ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name", ticket.TicketPriorityId);
-            //ViewData["TicketStatusId"] = new SelectList(_context.TicketStatuses, "Id", "Name", ticket.TicketStatusId);
-            ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name", ticket.TicketTypeId);
+            string userId = _userManager.GetUserId(User);
+
+            if (User.IsInRole(nameof(BTRoles.Admin)))
+            {
+                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyIdAsync(companyId), "Id", "Name");
+            }
+            else
+            {
+                ViewData["ProjectId"] = new SelectList(await _projectService.GetUserProjectsAsync(userId), "Id", "Name");
+            }
+
+            ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name");
+            ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name");
             return View(ticket);
         }
 
@@ -158,6 +186,7 @@ namespace GenesisBugTracker.Controllers
                 {
                     ticket.Created = DateTime.SpecifyKind(ticket.Created, DateTimeKind.Utc);
                     ticket.Updated = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+
                     // Use custom service methods
                     await _ticketService.UpdateTicketAsync(ticket);
                 }
@@ -183,7 +212,7 @@ namespace GenesisBugTracker.Controllers
             return View(ticket);
         }
 
-        // GET: Tickets/Delete/5
+        // GET: Tickets/Archive/5
         public async Task<IActionResult> Archive(int? id)
         {
             if (id == null || _context.Tickets == null)
@@ -191,14 +220,6 @@ namespace GenesisBugTracker.Controllers
                 return NotFound();
             }
 
-            //var ticket = await _context.Tickets
-            //    .Include(t => t.DeveloperUser)
-            //    .Include(t => t.Project)
-            //    .Include(t => t.SubmitterUser)
-            //    .Include(t => t.TicketPriority)
-            //    .Include(t => t.TicketStatus)
-            //    .Include(t => t.TicketType)
-            //    .FirstOrDefaultAsync(m => m.Id == id);
             Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
 
             if (ticket == null)
@@ -209,7 +230,7 @@ namespace GenesisBugTracker.Controllers
             return View(ticket);
         }
 
-        // POST: Tickets/Delete/5
+        // POST: Tickets/Archive/5
         [HttpPost, ActionName("Archive")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ArchiveConfirmed(int id)
@@ -218,14 +239,48 @@ namespace GenesisBugTracker.Controllers
             {
                 return Problem("Entity set 'ApplicationDbContext.Tickets'  is null.");
             }
-            var ticket = await _context.Tickets.FindAsync(id);
+            Ticket ticket = await _context.Tickets.FindAsync(id);
             if (ticket != null)
             {
-                //_context.Tickets.Remove(ticket);
                 await _ticketService.ArchiveTicketAsync(ticket);
             }
             
-            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Tickets/Restore/5
+        public async Task<IActionResult> Restore(int? id)
+        {
+            if (id == null || _context.Tickets == null)
+            {
+                return NotFound();
+            }
+
+            Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+
+            if (ticket == null)
+            {
+                return NotFound();
+            }
+
+            return View(ticket);
+        }
+
+        // POST: Tickets/Restore/5
+        [HttpPost, ActionName("Restore")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreTicket(int id)
+        {
+            if (_context.Tickets == null)
+            {
+                return Problem("Entity set 'ApplicationDbContext.Tickets'  is null.");
+            }
+            Ticket? ticket = await _context.Tickets.FindAsync(id);
+            if (ticket != null)
+            {
+                await _ticketService.RestoreTicketAsync(ticket);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

@@ -11,7 +11,7 @@ namespace GenesisBugTracker.Services
         private readonly ApplicationDbContext _context;
         private readonly IBTRolesService _rolesService;
 
-        public BTProjectService(ApplicationDbContext context, 
+        public BTProjectService(ApplicationDbContext context,
                                 IBTRolesService rolesService)
         {
             _context = context;
@@ -60,7 +60,7 @@ namespace GenesisBugTracker.Services
 
                 throw;
             }
-            
+
         }
         #endregion
 
@@ -104,10 +104,14 @@ namespace GenesisBugTracker.Services
             try
             {
                 project.Archived = true;
-                //_context.Update(project);
-                //await _context.SaveChangesAsync();
                 await UpdateProjectAsync(project);
 
+                foreach (Ticket ticket in project.Tickets)
+                {
+                    ticket.ArchivedByProject = true;
+                    _context.Update(ticket);
+                    await _context.SaveChangesAsync();
+                }
             }
             catch (Exception)
             {
@@ -116,7 +120,6 @@ namespace GenesisBugTracker.Services
             }
         }
         #endregion
-
 
         #region Get All Projects By CompanyId Async
         public async Task<List<Project>> GetAllProjectsByCompanyIdAsync(int companyId)
@@ -149,6 +152,25 @@ namespace GenesisBugTracker.Services
                                                     .ToListAsync();
 
                 return projects;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region Get All Archived Projects Async
+        public async Task<List<Project>> GetAllArchivedProjectsAsync(int companyId)
+        {
+            try
+            {
+                List<Project> archivedProjects = new();
+
+                archivedProjects = await _context.Projects.Where(p => p.Archived == true)
+                                                          .ToListAsync();
+                return archivedProjects;
             }
             catch (Exception)
             {
@@ -213,6 +235,44 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Get User Projects Async
+        public async Task<List<Project>> GetUserProjectsAsync(string userId)
+        {
+            try
+            {
+                List<Project>? projects = (await _context.Users.Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Company)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Members)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                                        .ThenInclude(t => t.DeveloperUser)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                                        .ThenInclude(t => t.SubmitterUser)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                                        .ThenInclude(t => t.TicketPriority)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                                        .ThenInclude(t => t.TicketStatus)
+                                                               .Include(u => u.Projects)
+                                                                    .ThenInclude(p => p.Tickets)
+                                                                        .ThenInclude(t => t.TicketType)
+                                                               .FirstOrDefaultAsync(u => u.Id == userId))?
+                                                               .Projects!.ToList();
+                return projects!;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
         #region Is User On Project Async
         public async Task<bool> IsUserOnProjectAsync(string userId, int projectId)
         {
@@ -220,9 +280,9 @@ namespace GenesisBugTracker.Services
             {
                 Project? project = await _context.Projects.Include(p => p.Members)
                                                           .FirstOrDefaultAsync(p => p.Id == projectId);
-                
+
                 bool result = false;
-                
+
                 if (project != null)
                 {
                     result = project.Members.Any(m => m.Id == userId);
@@ -283,6 +343,20 @@ namespace GenesisBugTracker.Services
             }
         }
         #endregion
+
+        public async Task RestoreProjectAsync(Project project)
+        {
+            try
+            {
+                project.Archived = false;
+                await UpdateProjectAsync(project);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
 
         #region Update Project Async
         public async Task UpdateProjectAsync(Project project)

@@ -39,6 +39,7 @@ namespace GenesisBugTracker.Models
         public int TicketTypeId { get; set; }
 
         // Foreign Key
+        [Required]
         public string? SubmitterUserId { get; set; }
 
         // Foreign Key

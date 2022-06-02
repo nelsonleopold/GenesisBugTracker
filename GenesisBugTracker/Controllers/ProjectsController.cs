@@ -48,6 +48,17 @@ namespace GenesisBugTracker.Controllers
             return View(projects);
         }
 
+        // GET: Projects/ArchivedProjects
+        [Authorize]
+        public async Task<IActionResult> ArchivedProjects()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Project> projects = await _projectService.GetAllArchivedProjectsAsync(companyId);
+
+            return View(projects);
+        }
+
         // GET: Projects/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -223,7 +234,7 @@ namespace GenesisBugTracker.Controllers
             return View(model.Project);
         }
 
-        // GET: Projects/Delete/5
+        // GET: Projects/Archive/5
         public async Task<IActionResult> Archive(int? id)
         {
             if (id == null || _context.Projects == null)
@@ -241,7 +252,7 @@ namespace GenesisBugTracker.Controllers
             return View(project);
         }
 
-        // POST: Projects/Delete/5
+        // POST: Projects/Archive/5
         [HttpPost, ActionName("Archive")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ArchiveConfirmed(int id)
@@ -256,7 +267,42 @@ namespace GenesisBugTracker.Controllers
                 await _projectService.ArchiveProjectAsync(project);
             }
             
-            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Projects/Restore/5
+        public async Task<IActionResult> Restore(int? id)
+        {
+            if (id == null || _context.Projects == null)
+            {
+                return NotFound();
+            }
+            int companyId = User.Identity!.GetCompanyId();
+
+            Project project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            return View(project);
+        }
+
+        // POST: Projects/Archive/5
+        [HttpPost, ActionName("Restore")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreProject(int id)
+        {
+            if (_context.Projects == null)
+            {
+                return Problem("Entity set 'ApplicationDbContext.Projects'  is null.");
+            }
+            Project? project = await _context.Projects.FindAsync(id);
+            if (project != null)
+            {
+                await _projectService.RestoreProjectAsync(project);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
