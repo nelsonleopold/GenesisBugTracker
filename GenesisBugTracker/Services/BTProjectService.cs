@@ -161,6 +161,26 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        public async Task<List<BTUser>> GetAllProjectMembersExceptPMAsync(int projectId)
+        {
+            try
+            {
+                List<BTUser> developers = await GetAllProjectMembersByRoleAsync(projectId, nameof(BTRoles.Developer));
+                List<BTUser> submitters = await GetAllProjectMembersByRoleAsync(projectId, nameof(BTRoles.Submitter));
+                List<BTUser> admins = await GetAllProjectMembersByRoleAsync(projectId, nameof(BTRoles.Admin));
+
+                List<BTUser> teamMembers = developers.Concat(submitters).Concat(admins).ToList();
+
+                return teamMembers;
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
         #region Get All Archived Projects Async
         public async Task<List<Project>> GetAllArchivedProjectsAsync(int companyId)
         {
@@ -168,7 +188,7 @@ namespace GenesisBugTracker.Services
             {
                 List<Project> archivedProjects = new();
 
-                archivedProjects = await _context.Projects.Where(p => p.Archived == true)
+                archivedProjects = await _context.Projects.Where(p => p.CompanyId == companyId && p.Archived == true)
                                                           .ToListAsync();
                 return archivedProjects;
             }
@@ -235,6 +255,31 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        public async Task<List<BTUser>> GetAllProjectMembersByRoleAsync(int projectId, string roleName)
+        {
+            try
+            {
+                Project? project = await _context.Projects.Include(p => p.Members)
+                                                    .FirstOrDefaultAsync(p => p.Id == projectId);
+
+                List<BTUser> members = new();
+
+                foreach (BTUser user in project?.Members!)
+                {
+                    if (await _rolesService.IsUserInRoleAsync(user, roleName))
+                    {
+                        members.Add(user);
+                    }
+                }
+                return members;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
         #region Get User Projects Async
         public async Task<List<Project>> GetUserProjectsAsync(string userId)
         {
@@ -273,6 +318,20 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        public async Task<List<BTUser>> GetUsersNotOnProjectAsync(int projectId, int companyId)
+        {
+            try
+            {
+                List<BTUser> users = await _context.Users.Where(u => u.Projects!.All(p => p.Id != projectId) && u.CompanyId == companyId).ToListAsync();
+                return users;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
         #region Is User On Project Async
         public async Task<bool> IsUserOnProjectAsync(string userId, int projectId)
         {
@@ -296,7 +355,9 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
 
+        #region Remove Project Manager Async
         public async Task RemoveProjectManagerAsync(int projectId)
         {
             try
@@ -344,6 +405,7 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Restore Project Async
         public async Task RestoreProjectAsync(Project project)
         {
             try
@@ -357,6 +419,7 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
 
         #region Update Project Async
         public async Task UpdateProjectAsync(Project project)

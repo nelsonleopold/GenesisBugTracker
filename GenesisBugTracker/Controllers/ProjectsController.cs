@@ -48,6 +48,71 @@ namespace GenesisBugTracker.Controllers
             return View(projects);
         }
 
+        // GET: Projects/AssignProjectMembers
+        [Authorize(Roles = "Admin, ProjectManager")]
+        public async Task<IActionResult> AssignProjectMembers(int? id)
+        {
+            try
+            {
+                if (id == null)
+                {
+                    return NotFound();
+                }
+
+                ProjectMembersViewModel model = new();
+                int companyId = User.Identity!.GetCompanyId();
+                model.Project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
+                List<BTUser> developers = await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.Developer), companyId);
+                List<BTUser> submitters = await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.Submitter), companyId);
+
+                List<BTUser> teamMembers = developers.Concat(submitters).ToList();
+                List<string> projectMembers = model.Project.Members.Select(m => m.Id).ToList();
+
+                model.UsersList = new MultiSelectList(teamMembers, "Id", "FullName", projectMembers);
+
+                return View(model);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        // POST: Projects/AssignProjectMembers
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignProjectMembers(ProjectMembersViewModel model)
+        {
+            try
+            {
+                if (model.SelectedUsers != null)
+                {
+                    List<string> memberIds = (await _projectService.GetAllProjectMembersExceptPMAsync(model.Project!.Id)).Select(m => m.Id).ToList();
+
+                    // Remove current members
+                    foreach (string member in memberIds)
+                    {
+                        await _projectService.RemoveUserFromProjectAsync(member, model.Project.Id);
+                    }
+                    // Add selected members
+                    foreach (string member in model.SelectedUsers)
+                    {
+                        await _projectService.AddUserToProjectAsync(member, model.Project.Id);
+                    }
+
+                    return RedirectToAction(nameof(Details), new { id = model.Project!.Id });
+                }
+
+                    return RedirectToAction(nameof(AssignProjectMembers), new { id = model.Project!.Id });
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
         // GET: Projects/ArchivedProjects
         [Authorize]
         public async Task<IActionResult> ArchivedProjects()
@@ -57,6 +122,68 @@ namespace GenesisBugTracker.Controllers
             List<Project> projects = await _projectService.GetAllArchivedProjectsAsync(companyId);
 
             return View(projects);
+        }
+
+        // GET: Projects/AssignProjectManager
+        [Authorize]
+        public async Task<IActionResult> AssignProjectManager(int? id)
+        {
+            if (id == null || _context.Projects == null)
+            {
+                return NotFound();
+            }
+            AssignProjectManagerToProjectViewModel model = new();
+            int companyId = User.Identity!.GetCompanyId();
+            Project project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
+
+            model.Project = project;
+
+            model.PMList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.ProjectManager), companyId), "Id", "FullName");
+            return View(model);
+        }
+
+        // POST: Projects/AssignProjectManager
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignProjectManager(AssignProjectManagerToProjectViewModel model)
+        {
+            if (model.Project == null)
+            {
+                return NotFound();
+            }
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    model.Project.StartDate = DateTime.SpecifyKind(model.Project.StartDate, DateTimeKind.Utc);
+                    model.Project.EndDate = DateTime.SpecifyKind(model.Project.EndDate, DateTimeKind.Utc);
+
+                    // Use custom service methods
+                    await _projectService.UpdateProjectAsync(model.Project);
+
+                    // Allow Admin to edit ProjectManager
+                    if (!string.IsNullOrEmpty(model.PMId))
+                    {
+                        await _projectService.AddProjectManagerAsync(model.PMId, model.Project.Id);
+                    }
+
+
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+
+            int companyId = User.Identity!.GetCompanyId();
+            Project project = await _projectService.GetProjectByIdAsync(model.Project.Id, companyId);
+
+            model.Project = project;
+
+            model.PMList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.ProjectManager), companyId), "Id", "FullName");
+            return View(model);
         }
 
         // GET: Projects/Details/5
@@ -158,7 +285,7 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
-            
+
             return View(model);
         }
 
@@ -266,7 +393,7 @@ namespace GenesisBugTracker.Controllers
             {
                 await _projectService.ArchiveProjectAsync(project);
             }
-            
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -308,7 +435,7 @@ namespace GenesisBugTracker.Controllers
 
         private bool ProjectExists(int id)
         {
-          return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

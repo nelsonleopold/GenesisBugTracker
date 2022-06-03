@@ -1,4 +1,11 @@
 ﻿@model IEnumerable<GenesisBugTracker.Models.Project>
+@using GenesisBugTracker.Models.ViewModels
+@using GenesisBugTracker.Models.Enums
+@using GenesisBugTracker.Services.Interfaces
+@using Microsoft.AspNetCore.Identity
+
+@inject IBTProjectService ProjectService
+
 
 @{
     ViewData["Title"] = "Index";
@@ -34,7 +41,12 @@
                 @Html.DisplayNameFor(model => model.Archived)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Company)
+                @if (User.IsInRole(nameof(BTRoles.Admin)))
+                {
+                    <div class="form-group">
+                        <label class="form-label">@nameof(BTRoles.ProjectManager)</label>
+                    </div>
+                }
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.ProjectPriority)
@@ -43,44 +55,56 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Created)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EndDate)
-            </td>
-            <td>
-                @if(item.ImageFileData != null)
-                {
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Created)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StartDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.EndDate)
+                </td>
+                <td>
+                    @if (item.ImageFileData != null)
+                    {
                         <img style="height:120px;width:120px" src="data:image/*;base64,@(Convert.ToBase64String(item.ImageFileData!))" alt="">
                     }
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Archived)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Company.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ProjectPriority.Name)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Archive" asp-route-id="@item.Id">Archive</a>
-            </td>
-        </tr>
-}
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Archived)
+                </td>
+                <td>
+                    @if (User.IsInRole(nameof(BTRoles.Admin)))
+                    {
+                        @((await ProjectService.GetProjectManagerAsync(item.Id))?.FullName)
+                    }
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ProjectPriority.Name)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Archive" asp-route-id="@item.Id">Archive</a>
+                    @if (User.IsInRole(nameof(BTRoles.Admin)))
+                    {
+                        <button class="btn btn-dark"><a asp-action="AssignProjectManager" asp-route-id="@item.Id">Assign PM</a></button>
+                    }
+                    @if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+                    {
+                        <button class="btn btn-dark"><a asp-action="AssignProjectMembers" asp-route-id="@item.Id">Assign Project Members</a></button>
+                    }
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

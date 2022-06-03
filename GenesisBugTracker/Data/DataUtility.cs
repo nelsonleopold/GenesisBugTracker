@@ -208,6 +208,35 @@ namespace GenesisBugTracker.Data
             //Seed Default ProjectManager2 User
             defaultUser = new BTUser
             {
+                UserName = "ProjectManager3@bugtracker.com",
+                Email = "ProjectManager3@bugtracker.com",
+                FirstName = "Lyle",
+                LastName = "Appuser",
+                EmailConfirmed = true,
+                CompanyId = company1Id
+            };
+            try
+            {
+                var user = await userManager.FindByEmailAsync(defaultUser.Email);
+                if (user == null)
+                {
+                    await userManager.CreateAsync(defaultUser, "Abc&123!");
+                    await userManager.AddToRoleAsync(defaultUser, nameof(BTRoles.ProjectManager));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("*************  ERROR  *************");
+                Console.WriteLine("Error Seeding Default ProjectManager1 User.");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("***********************************");
+                throw;
+            }
+
+
+            //Seed Default ProjectManager3 User
+            defaultUser = new BTUser
+            {
                 UserName = "ProjectManager2@bugtracker.com",
                 Email = "ProjectManager2@bugtracker.com",
                 FirstName = "Jane",

@@ -1,18 +1,21 @@
-﻿@model GenesisBugTracker.Models.ViewModels.AddProjectWithPMViewModel
+﻿@model GenesisBugTracker.Models.ViewModels.AssignProjectManagerToProjectViewModel
 @using GenesisBugTracker.Models.Enums
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Assign Project Manager";
 }
 
-<h1>Create</h1>
+<h1>Assign Project Manager</h1>
 
 <h4>Project</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create" enctype="multipart/form-data">
+        <form asp-action="AssignProjectManager">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Project!.Id" />
+            <input type="hidden" asp-for="Project!.CompanyId" />
+            <input type="hidden" asp-for="Project!.ProjectPriorityId" />
 
             <div class="form-group">
                 <label asp-for="Project!.Name" class="control-label"></label>
@@ -36,25 +39,6 @@
                 <input asp-for="Project!.EndDate" class="form-control" />
                 <span asp-validation-for="Project!.EndDate" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="Project!.ProjectPriorityId" class="control-label"></label>
-                <select asp-for="Project!.ProjectPriorityId" class="form-control" asp-items="@Model.PriorityList"></select>
-            </div>
-            <div class="form-group">
-                <label class="control-label">Project Image</label>
-                <input asp-for="Project!.ImageFormFile" class="form-control" type="file" accept=".png, .jpg, .jpeg, .gif, .svg"
-                       onchange="document.getElementById('imageFileData').src = window.URL.createObjectURL(this.files[0])" />
-            </div>
-
-            <label>Image Preview</label>
-            @if (Model.Project?.ImageFileData != null)
-            {
-                <img id="imageFileData" class="img-fluid img-thumbnail mt-2" style="width:120px;height:120px" src="data:image/*;base64,@(Convert.ToBase64String(Model.Project.ImageFileData))" />
-            }
-            else
-            {
-                <img id="imageFileData" class="img-fluid img-thumbnail mt-2" style="width:120px;height:120px" src="https://cdn.icon-icons.com/icons2/2331/PNG/512/task_software_platform_management_project_icon_142266.png" />
-            }
 
             @if (User.IsInRole(nameof(BTRoles.Admin)))
             {
@@ -67,7 +51,7 @@
             }
 
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Assign" class="btn btn-primary" />
             </div>
         </form>
     </div>
@@ -82,3 +66,4 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     }
+
