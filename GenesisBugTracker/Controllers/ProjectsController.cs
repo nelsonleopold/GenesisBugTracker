@@ -48,7 +48,7 @@ namespace GenesisBugTracker.Controllers
             return View(projects);
         }
 
-        public async Task<IActionResult> UnassigneProjects()
+        public async Task<IActionResult> UnassignedProjects()
         {
             int companyId = User.Identity!.GetCompanyId();
 

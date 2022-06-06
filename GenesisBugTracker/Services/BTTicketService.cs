@@ -106,6 +106,7 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Restore Ticket Async
         public async Task RestoreTicketAsync(Ticket ticket)
         {
             try
@@ -119,6 +120,7 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
 
         #region Update Ticket Async
         public async Task UpdateTicketAsync(Ticket ticket)
