@@ -161,6 +161,7 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Get All Project Members Except PM Async
         public async Task<List<BTUser>> GetAllProjectMembersExceptPMAsync(int projectId)
         {
             try
@@ -180,6 +181,7 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
 
         #region Get All Archived Projects Async
         public async Task<List<Project>> GetAllArchivedProjectsAsync(int companyId)
@@ -255,6 +257,7 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Get All Project Members By Role Async
         public async Task<List<BTUser>> GetAllProjectMembersByRoleAsync(int projectId, string roleName)
         {
             try
@@ -279,6 +282,33 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
+
+        #region Get Unassigned Projects Async
+        public async Task<List<Project>> GetUnassignedProjectsAsync(int companyId)
+        {
+            List<Project> result = new();
+            List<Project> projects = new();
+            try
+            {
+                projects = await _context.Projects
+                                         .Include(p => p.ProjectPriority)
+                                         .Where(p => p.CompanyId == companyId).ToListAsync();
+                foreach (Project project in projects)
+                {
+                    if ((await GetAllProjectMembersByRoleAsync(project.Id, nameof(BTRoles.ProjectManager))).Count == 0)
+                    {
+                        result.Add(project);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            return result;
+        }
+        #endregion
 
         #region Get User Projects Async
         public async Task<List<Project>> GetUserProjectsAsync(string userId)
@@ -318,6 +348,7 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Get Users Not On Project Async
         public async Task<List<BTUser>> GetUsersNotOnProjectAsync(int projectId, int companyId)
         {
             try
@@ -331,6 +362,7 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+        #endregion
 
         #region Is User On Project Async
         public async Task<bool> IsUserOnProjectAsync(string userId, int projectId)

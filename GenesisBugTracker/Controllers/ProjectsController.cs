@@ -48,6 +48,15 @@ namespace GenesisBugTracker.Controllers
             return View(projects);
         }
 
+        public async Task<IActionResult> UnassigneProjects()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Project> unassignedProjects = await _projectService.GetUnassignedProjectsAsync(companyId);
+
+            return View(unassignedProjects);
+        }
+
         // GET: Projects/AssignProjectMembers
         [Authorize(Roles = "Admin, ProjectManager")]
         public async Task<IActionResult> AssignProjectMembers(int? id)
