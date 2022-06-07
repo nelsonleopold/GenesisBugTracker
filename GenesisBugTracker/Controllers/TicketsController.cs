@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using GenesisBugTracker.Extensions;
 using GenesisBugTracker.Models.Enums;
+using GenesisBugTracker.Models.ViewModels;
 
 namespace GenesisBugTracker.Controllers
 {
@@ -21,16 +22,19 @@ namespace GenesisBugTracker.Controllers
         private readonly UserManager<BTUser> _userManager;
         private readonly IBTTicketService _ticketService;
         private readonly IBTProjectService _projectService;
+        private readonly IBTRolesService _rolesService;
 
         public TicketsController(ApplicationDbContext context,
                                  IBTTicketService ticketService,
                                  UserManager<BTUser> userManager,
-                                 IBTProjectService projectService)
+                                 IBTProjectService projectService,
+                                 IBTRolesService rolesService)
         {
             _context = context;
             _ticketService = ticketService;
             _userManager = userManager;
             _projectService = projectService;
+            _rolesService = rolesService;
         }
 
         // GET: Tickets
@@ -41,6 +45,29 @@ namespace GenesisBugTracker.Controllers
 
             List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
 
+
+            return View(tickets);
+        }
+
+        // GET: Tickets/AllTickets
+        [Authorize]
+        public async Task<IActionResult> AllTickets()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
+
+            return View(tickets);
+        }
+
+        // GET: Tickets/MyTickets
+        [Authorize]
+        public async Task<IActionResult> MyTickets()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+            string userId = _userManager.GetUserId(User);
+
+            List<Ticket> tickets = await _ticketService.GetTicketsByUserIdAsync(userId, companyId);
 
             return View(tickets);
         }
@@ -57,6 +84,82 @@ namespace GenesisBugTracker.Controllers
             return View(tickets);
         }
 
+        // GET: Tickets/UnassignedTickets
+        public async Task<IActionResult> UnassignedTickets()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Ticket> tickets = await _ticketService.GetUnassignedTicketsAsync(companyId);
+
+            return View(tickets);
+        }
+
+        // GET: Tickets/AssignDevelopers
+        [Authorize(Roles = "Admin, ProjectManager")]
+        public async Task<IActionResult> AssignDeveloper(int? id)
+        {
+            try
+            {
+                if (id == null || _context.Tickets == null)
+                {
+                    return NotFound();
+                }
+
+                AssignDeveloperToTicketViewModel model = new();
+                int companyId = User.Identity!.GetCompanyId();
+                Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+
+                model.Ticket = ticket;
+
+                model.DevList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.Developer), companyId), "Id", "FullName");
+                return View(model);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        // POST: Tickets/AssignDeveloper
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignDeveloper(AssignDeveloperToTicketViewModel model)
+        {
+            if (model.Ticket == null)
+            {
+                return NotFound();
+            }
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    model.Ticket.Created = DateTime.SpecifyKind(model.Ticket.Created, DateTimeKind.Utc);
+                    model.Ticket.Updated = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+
+                    if (!string.IsNullOrEmpty(model.DevId))
+                    {
+                        model.Ticket.DeveloperUserId = model.DevId;
+                        await _ticketService.UpdateTicketAsync(model.Ticket);
+                    }
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+                return RedirectToAction("Details", "Tickets", new {model.Ticket.Id});
+            }
+
+            int companyId = User.Identity!.GetCompanyId();
+            Ticket ticket = await _ticketService.GetTicketByIdAsync(model.Ticket.Id);
+
+            model.Ticket = ticket;
+
+            model.DevList = new SelectList(await _rolesService.GetUsersInRoleAsync(nameof(BTRoles.Developer), companyId), "Id", "FullName");
+            return View(model);
+        }
+
         // GET: Tickets/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -64,15 +167,6 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
-
-            //var ticket = await _context.Tickets
-            //    .Include(t => t.DeveloperUser)
-            //    .Include(t => t.Project)
-            //    .Include(t => t.SubmitterUser)
-            //    .Include(t => t.TicketPriority)
-            //    .Include(t => t.TicketStatus)
-            //    .Include(t => t.TicketType)
-            //    .FirstOrDefaultAsync(m => m.Id == id);
 
             Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
 
@@ -275,7 +369,9 @@ namespace GenesisBugTracker.Controllers
             {
                 return Problem("Entity set 'ApplicationDbContext.Tickets'  is null.");
             }
+
             Ticket? ticket = await _context.Tickets.FindAsync(id);
+
             if (ticket != null)
             {
                 await _ticketService.RestoreTicketAsync(ticket);

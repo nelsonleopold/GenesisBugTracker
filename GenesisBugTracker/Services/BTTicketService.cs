@@ -1,5 +1,6 @@
 ﻿using GenesisBugTracker.Data;
 using GenesisBugTracker.Models;
+using GenesisBugTracker.Models.Enums;
 using GenesisBugTracker.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,16 @@ namespace GenesisBugTracker.Services
     public class BTTicketService : IBTTicketService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IBTRolesService _rolesService;
+        private readonly IBTProjectService _projectService;
 
-        public BTTicketService(ApplicationDbContext context)
+        public BTTicketService(ApplicationDbContext context,
+                               IBTRolesService rolesService,
+                               IBTProjectService projectService)
         {
             _context = context;
+            _rolesService = rolesService;
+            _projectService = projectService;
         }
 
         #region Add New Ticket Async
@@ -44,10 +51,10 @@ namespace GenesisBugTracker.Services
             try
             {
                 List<Ticket> archivedTickets = await _context.Projects.Include(p => p.Tickets)
-                                                         .Where(p => p.CompanyId == companyId)
-                                                         .SelectMany(p => p.Tickets)
-                                                            .Where(t => t.Archived == true)
-                                                         .ToListAsync();
+                                                                      .Where(p => p.CompanyId == companyId)
+                                                                      .SelectMany(p => p.Tickets)
+                                                                        .Where(t => t.Archived == true)
+                                                                      .ToListAsync();
                 return archivedTickets;
             }
             catch (Exception)
@@ -64,6 +71,7 @@ namespace GenesisBugTracker.Services
             List<Ticket> tickets = await _context.Projects.Include(p => p.Tickets)
                                                           .Where(p => p.CompanyId == companyId)
                                                           .SelectMany(p => p.Tickets)
+                                                            .Where(t => t.Archived == false)
                                                             .Include(t => t.Attachments)
                                                             .Include(t => t.Comments)
                                                             .Include(t => t.DeveloperUser)
@@ -97,6 +105,76 @@ namespace GenesisBugTracker.Services
                                               .Include(t => t.TicketHistories)
                                               .FirstAsync();
                 return ticket;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region Get Tickets By User Id
+        public async Task<List<Ticket>> GetTicketsByUserIdAsync(string userId, int companyId)
+        {
+            BTUser? btUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            List<Ticket>? tickets = new();
+
+            try
+            {
+                if (await _rolesService.IsUserInRoleAsync(btUser!, nameof(BTRoles.Admin)))
+                {
+                    tickets = (await _projectService.GetAllProjectsByCompanyIdAsync(companyId))
+                                                    .SelectMany(p => p.Tickets!).ToList();
+                }
+                else if (await _rolesService.IsUserInRoleAsync(btUser!, nameof(BTRoles.Developer)))
+                {
+                    tickets = (await _projectService.GetAllProjectsByCompanyIdAsync(companyId))
+                                                    .SelectMany(p => p.Tickets!)
+                                                    .Where(t => t.DeveloperUserId == userId || t.SubmitterUserId == userId).ToList();
+                }
+                else if (await _rolesService.IsUserInRoleAsync(btUser!, nameof(BTRoles.Submitter)))
+                {
+                    tickets = (await _projectService.GetAllProjectsByCompanyIdAsync(companyId))
+                                                    .SelectMany(t => t.Tickets!).Where(t => t.SubmitterUserId == userId).ToList();
+                }
+                else if (await _rolesService.IsUserInRoleAsync(btUser!, nameof(BTRoles.ProjectManager)))
+                {
+                    List<Ticket>? projectTickets = (await _projectService.GetUserProjectsAsync(userId)).SelectMany(t => t.Tickets!).ToList();
+                    List<Ticket>? submittedTickets = (await _projectService.GetAllProjectsByCompanyIdAsync(companyId))
+                                                    .SelectMany(p => p.Tickets!).Where(t => t.SubmitterUserId == userId).ToList();
+
+                    tickets = projectTickets.Concat(submittedTickets).ToList();
+                }
+
+                return tickets;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
+        #region Get Unassigned Tickets Async
+        public async Task<List<Ticket>> GetUnassignedTicketsAsync(int companyId)
+        {
+            try
+            {
+                List<Ticket> tickets = await GetAllTicketsByCompanyIdAsync(companyId);
+                List<Ticket> result = new();
+
+                foreach (Ticket ticket in tickets)
+                {
+                    if (ticket.DeveloperUserId == null)
+                    {
+                        result.Add(ticket);
+                    }
+                }
+
+                return result;
+
             }
             catch (Exception)
             {

@@ -1,11 +1,15 @@
-﻿@model IEnumerable<GenesisBugTracker.Models.Ticket>
+﻿@using GenesisBugTracker.Models.Enums
+@model IEnumerable<GenesisBugTracker.Models.Ticket>
 
 @{
-    ViewData["Title"] = "Archived Index";
+    ViewData["Title"] = "Index";
 }
 
-<h1>Archived Tickets Index</h1>
+<h1>Index</h1>
 
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
 <table class="table">
     <thead>
         <tr>
@@ -90,10 +94,13 @@
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Restore" asp-route-id="@item.Id">Restore</a>
+                <a asp-action="Archive" asp-route-id="@item.Id">Archive</a> 
+                @if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+                    {
+                        <button class="btn btn-dark"><a asp-action="AssignDeveloper" asp-route-id="@item.Id">Assign Dev</a></button>
+                    }
             </td>
         </tr>
 }
     </tbody>
 </table>
-
