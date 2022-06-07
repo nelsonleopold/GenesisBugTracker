@@ -48,6 +48,26 @@ namespace GenesisBugTracker.Controllers
             return View(projects);
         }
 
+        // GET: Projects/All
+        public async Task<IActionResult> AllProjects()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+
+            List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
+
+            return View(projects);
+        }
+
+        // GET: Projects/My
+        public async Task<IActionResult> MyProjects()
+        {
+            string userId = _userManager.GetUserId(User);
+
+            List<Project> projects = await _projectService.GetUserProjectsAsync(userId);
+
+            return View(projects);
+        }
+
         public async Task<IActionResult> UnassignedProjects()
         {
             int companyId = User.Identity!.GetCompanyId();
@@ -113,7 +133,7 @@ namespace GenesisBugTracker.Controllers
                     return RedirectToAction(nameof(Details), new { id = model.Project!.Id });
                 }
 
-                    return RedirectToAction(nameof(AssignProjectMembers), new { id = model.Project!.Id });
+                return RedirectToAction(nameof(AssignProjectMembers), new { id = model.Project!.Id });
             }
             catch (Exception)
             {
