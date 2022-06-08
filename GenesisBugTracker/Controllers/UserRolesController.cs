@@ -15,7 +15,7 @@ namespace GenesisBugTracker.Controllers
         {
             List<ManageUserRolesViewModel> model = new();
             int companyId = User.Identity.GetCompanyId();
-            List<BTUser> bTUsers = _
+            // List<BTUser> bTUsers = _
 
             return View();
         }
