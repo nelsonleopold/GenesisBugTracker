@@ -64,39 +64,23 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
-        #region Add User To Project Async
         public async Task<bool> AddUserToProjectAsync(string userId, int projectId)
         {
-            BTUser? bTUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            BTUser? bTUser = await _context.FindUserAsync(userId);
 
-            if (bTUser != null)
-            {
-                Project? project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-                if (!await IsUserOnProjectAsync(userId, projectId))
-                {
-                    try
-                    {
-                        project!.Members!.Add(bTUser);
-                        await _context.SaveChangesAsync();
-                        return true;
-                    }
-                    catch (Exception)
-                    {
-
-                        throw;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
+            if (bTUser is null)
                 return false;
-            }
+
+            Project? project = await _context.FindProjectAsync(projectId);
+
+            if (project is null || project.HasUser(userId))
+                return false;
+
+            project.Members.Add(bTUser);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
-        #endregion
 
         #region Archive Project Async
         public async Task ArchiveProjectAsync(Project project)
@@ -364,30 +348,15 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
-        #region Is User On Project Async
         public async Task<bool> IsUserOnProjectAsync(string userId, int projectId)
         {
-            try
-            {
-                Project? project = await _context.Projects.Include(p => p.Members)
-                                                          .FirstOrDefaultAsync(p => p.Id == projectId);
+            Project? project = await _context.FindProjectAsync(projectId);
 
-                bool result = false;
+            if (project is null)
+                return false;
 
-                if (project != null)
-                {
-                    result = project.Members.Any(m => m.Id == userId);
-                }
-
-                return result;
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            return project.HasUser(userId);
         }
-        #endregion
 
         #region Remove Project Manager Async
         public async Task RemoveProjectManagerAsync(int projectId)
@@ -412,30 +381,23 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
-        #region Remove User From Project Async
         public async Task<bool> RemoveUserFromProjectAsync(string userId, int projectId)
         {
-            try
-            {
-                BTUser? bTUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                Project? project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            BTUser? bTUser = await _context.FindUserAsync(userId);
 
-                if (await IsUserOnProjectAsync(userId, projectId))
-                {
-                    project?.Members.Remove(bTUser!);
-                    await _context.SaveChangesAsync();
-                    return true;
-                }
-
+            if (bTUser is null)
                 return false;
-            }
-            catch (Exception)
-            {
 
-                throw;
-            }
+            Project? project = await _context.FindProjectAsync(projectId);
+
+            if (project is null || !project.HasUser(userId))
+                return false;
+
+            project.Members.Remove(bTUser);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
-        #endregion
 
         #region Restore Project Async
         public async Task RestoreProjectAsync(Project project)
@@ -468,5 +430,19 @@ namespace GenesisBugTracker.Services
             }
         }
         #endregion
+    }
+
+    internal static class ApplicationDbContextExtensions
+    {
+        public static async Task<BTUser?> FindUserAsync(this ApplicationDbContext context, string userId) =>
+            await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+        public static async Task<Project?> FindProjectAsync(this ApplicationDbContext context, int projectId) =>
+            await context.Projects
+                .Include(p => p.Members)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+
+        public static bool HasUser(this Project project, string userId) =>
+            project.Members.Any(m => m.Id == userId);
     }
 }
