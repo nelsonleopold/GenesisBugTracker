@@ -7,16 +7,25 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using GenesisBugTracker.Data;
 using GenesisBugTracker.Models;
+using GenesisBugTracker.Services;
+using GenesisBugTracker.Services.Interfaces;
+using GenesisBugTracker.Models.ViewModels;
 
 namespace GenesisBugTracker.Controllers
 {
     public class CompaniesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IBTCompanyInfoService _companyInfoService;
+        private readonly IBTRolesService _rolesService;
 
-        public CompaniesController(ApplicationDbContext context)
+        public CompaniesController(ApplicationDbContext context,
+                                   IBTCompanyInfoService companyInfoService,
+                                   IBTRolesService rolesService)
         {
             _context = context;
+            _companyInfoService = companyInfoService;
+            _rolesService = rolesService;
         }
 
         // GET: Companies
@@ -25,6 +34,36 @@ namespace GenesisBugTracker.Controllers
               return _context.Companies != null ? 
                           View(await _context.Companies.ToListAsync()) :
                           Problem("Entity set 'ApplicationDbContext.Companies'  is null.");
+        }
+
+        // GET: Companies/CompanyMembers
+        public async Task<IActionResult> CompanyMembers(int? id)
+        {
+            try
+            {
+                if (id == null || _context.Companies == null)
+                {
+                    return NotFound();
+                }
+                List<CompanyMembersViewModel> model = new();
+                List<BTUser> members = await _companyInfoService.GetAllMembersAsync(id.Value);
+
+                foreach (BTUser bTUser in members)
+                {
+                    CompanyMembersViewModel viewModel = new();
+                    viewModel.BTUser = bTUser;
+                    IEnumerable<string> currentRoles = await _rolesService.GetUserRolesAsync(bTUser);
+                    viewModel.Roles = currentRoles.ToList();
+
+                    model.Add(viewModel);
+                }
+                return View(model);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         // GET: Companies/Details/5

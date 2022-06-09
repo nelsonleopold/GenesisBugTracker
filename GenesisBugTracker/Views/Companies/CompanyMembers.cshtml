@@ -1,0 +1,54 @@
+﻿@model IEnumerable<GenesisBugTracker.Models.ViewModels.CompanyMembersViewModel>
+@using GenesisBugTracker.Models.Enums
+@using GenesisBugTracker.Services.Interfaces
+
+@inject IBTProjectService ProjectService
+
+@{
+    ViewData["Title"] = "Company Members";
+}
+
+<h1>Company Members</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.BTUser!.FullName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Roles)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BTUser!.Projects)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.BTUser!.FullName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Roles)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.BTUser!.Id)
+                    @foreach(Project project in item.BTUser!.Projects!)
+                    {
+                        @((await ProjectService.GetUserProjectsAsync(item.BTUser!.Id)).ToList())
+                    }          
+                </td>
+                <td>
+                    @if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+                    {
+                        <button class="btn btn-dark"><a asp-controller="Projects" asp-action="AllProjects">Assign Member To Project</a></button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
