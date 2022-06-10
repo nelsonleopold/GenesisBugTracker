@@ -40,8 +40,8 @@ namespace GenesisBugTracker.Models
 
         public virtual Project? Project { get; set; }
 
-        public virtual BTUser? Invitor { get; set; }
+        public virtual BTUser? Sender { get; set; }
 
-        public virtual BTUser? Invitee { get; set; }
+        public virtual BTUser? Recipient { get; set; }
     }
 }

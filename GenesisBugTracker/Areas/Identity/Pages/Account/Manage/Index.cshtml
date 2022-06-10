@@ -1,8 +1,13 @@
 ﻿@page
 @model IndexModel
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<BTUser> UserManager
+
 @{
     ViewData["Title"] = "Profile";
     ViewData["ActivePage"] = ManageNavPages.Index;
+    BTUser btUser = await UserManager.GetUserAsync(User);
 }
 
 <h3>@ViewData["Title"]</h3>
@@ -11,10 +16,22 @@
     <div class="col-md-6">
         <form id="profile-form" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             <div class="form-floating">
                 <input asp-for="Username" class="form-control" disabled />
                 <label asp-for="Username" class="form-label"></label>
             </div>
+
+            <div class="form-floating">
+                <input asp-for="@btUser.FirstName" class="form-control" />
+                <label asp-for="@btUser.FirstName" class="form-label"></label>
+            </div>
+
+            <div class="form-floating">
+                <input asp-for="@btUser.LastName" class="form-control" />
+                <label asp-for="@btUser.LastName" class="form-label"></label>
+            </div>
+
             <div class="form-floating">
                 <input asp-for="Input.PhoneNumber" class="form-control" />
                 <label asp-for="Input.PhoneNumber" class="form-label"></label>

@@ -37,6 +37,22 @@ namespace GenesisBugTracker.Services
         }
         #endregion
 
+        #region Add Ticket Attachment Async
+        public async Task AddTicketAttachmentAsync(TicketAttachment ticketAttachment)
+        {
+            try
+            {
+                await _context.AddAsync(ticketAttachment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
+
         #region Archive Ticket Async
         public async Task ArchiveTicketAsync(Ticket ticket)
         {
@@ -84,6 +100,26 @@ namespace GenesisBugTracker.Services
                                                           .ToListAsync();
 
             return tickets;
+        }
+        #endregion
+
+        #region Get Ticket As No Tracking Async
+        public async Task<Ticket> GetTicketAsNoTrackingAsync(int ticketId)
+        {
+            try
+            {
+                return await _context.Tickets.Include(t => t.DeveloperUser)
+                                             .Include(t => t.Project)
+                                             .Include(t => t.TicketPriority)
+                                             .Include(t => t.TicketStatus)
+                                             .Include(t => t.TicketType)
+                                             .AsNoTracking()
+                                             .FirstOrDefaultAsync(t => t.Id == ticketId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
         #endregion
 

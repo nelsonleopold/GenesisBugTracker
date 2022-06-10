@@ -23,18 +23,30 @@ namespace GenesisBugTracker.Controllers
         private readonly IBTTicketService _ticketService;
         private readonly IBTProjectService _projectService;
         private readonly IBTRolesService _rolesService;
+        private readonly IBTFileService _fileService;
+        private readonly IBTTicketHistoryService _ticketHistoryService;
+        private readonly IBTNotificationService _notificationService;
+        private readonly IBTLookupService _lookupService;
 
         public TicketsController(ApplicationDbContext context,
                                  IBTTicketService ticketService,
                                  UserManager<BTUser> userManager,
                                  IBTProjectService projectService,
-                                 IBTRolesService rolesService)
+                                 IBTRolesService rolesService,
+                                 IBTTicketHistoryService ticketHistoryService,
+                                 IBTNotificationService notificationService,
+                                 IBTLookupService lookupService,
+                                 IBTFileService fileService)
         {
             _context = context;
             _ticketService = ticketService;
             _userManager = userManager;
             _projectService = projectService;
             _rolesService = rolesService;
+            _ticketHistoryService = ticketHistoryService;
+            _notificationService = notificationService;
+            _lookupService = lookupService;
+            _fileService = fileService;
         }
 
         // GET: Tickets
@@ -132,6 +144,9 @@ namespace GenesisBugTracker.Controllers
             }
             if (ModelState.IsValid)
             {
+                BTUser btUser = await _userManager.GetUserAsync(User);
+                
+                Ticket oldTicket = await _ticketService.GetTicketAsNoTrackingAsync(model.Ticket!.Id);
                 try
                 {
                     model.Ticket.Created = DateTime.SpecifyKind(model.Ticket.Created, DateTimeKind.Utc);
@@ -148,7 +163,30 @@ namespace GenesisBugTracker.Controllers
 
                     throw;
                 }
-                return RedirectToAction("Details", "Tickets", new {model.Ticket.Id});
+
+                //newTicket
+                Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(model.Ticket.Id);
+                // Add History
+                await _ticketHistoryService.AddHistoryAsync(oldTicket, newTicket, btUser.Id);
+                //Send Notifications
+                //Notify Developer
+                if (model.Ticket.DeveloperUserId != null)
+                {
+                    Notification devNotification = new()
+                    {
+                        TicketId = model.Ticket.Id,
+                        NotificationTypeId = (await _lookupService.LookupNotificationTypeIdAsync(nameof(BTNotificationTypes.Ticket))).Value,
+                        Title = "Ticket Updated",
+                        Message = $"Ticket: {model.Ticket.Title}, was updated by {btUser.FullName}",
+                        Created = DateTime.UtcNow,
+                        SenderId = btUser.Id,
+                        RecipientId = model.Ticket.DeveloperUserId
+                    };
+                    await _notificationService.AddNotificationAsync(devNotification);
+                    await _notificationService.SendEmailNotificationAsync(devNotification, "Ticket Updated");
+
+                    return RedirectToAction("Details", "Tickets", new { model.Ticket.Id });
+                }
             }
 
             int companyId = User.Identity!.GetCompanyId();
@@ -178,6 +216,34 @@ namespace GenesisBugTracker.Controllers
             return View(ticket);
         }
 
+        // POST: Tickets/AddTicketAttachment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddTicketAttachment([Bind("Id,FormFile,Description,TicketId")] TicketAttachment ticketAttachment)
+        {
+            string statusMessage;
+
+            if (ModelState.IsValid && ticketAttachment.FormFile != null)
+            {
+                ticketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(ticketAttachment.FormFile);
+                ticketAttachment.FileName = ticketAttachment.FormFile.FileName;
+                ticketAttachment.FileContentType = ticketAttachment.FormFile.ContentType;
+
+                ticketAttachment.Created = DateTime.UtcNow;
+                ticketAttachment.UserId = _userManager.GetUserId(User);
+
+                await _ticketService.AddTicketAttachmentAsync(ticketAttachment);
+                statusMessage = "Success: New attachment added to Ticket.";
+            }
+            else
+            {
+                statusMessage = "Error: Invalid data.";
+
+            }
+
+            return RedirectToAction("Details", new { id = ticketAttachment.TicketId, message = statusMessage });
+        }
+
         // GET: Tickets/Create
         public async Task<IActionResult> Create()
         {
@@ -203,26 +269,52 @@ namespace GenesisBugTracker.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,Updated,Archived,ArchivedByProject,ProjectId,TicketPriorityId,TicketStatusId,TicketTypeId,SubmitterUserId,DeveloperUserId")] Ticket ticket)
+        public async Task<IActionResult> Create([Bind("Id,Title,Description,ProjectId,TicketPriorityId,TicketTypeId")] Ticket ticket)
         {
             ModelState.Remove("SubmitterUserId");
+            int companyId = User.Identity!.GetCompanyId();
+            string userId = _userManager.GetUserId(User);
             if (ModelState.IsValid)
             {
+                BTUser btUser = await _userManager.GetUserAsync(User);
                 ticket.Created = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
                 ticket.SubmitterUserId = _userManager.GetUserId(User);
-
                 ticket.TicketStatusId = (await _context.TicketStatuses.FirstOrDefaultAsync(t => t.Name == "New"))!.Id;
-                
+
+                await _ticketService.AddNewTicketAsync(ticket);
+
                 // TODO: Add Ticket History
+                Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+                await _ticketHistoryService.AddHistoryAsync(null!, newTicket, ticket.SubmitterUserId);
 
                 // TODO: Add Ticket Notification
+                BTUser projectManager = await _projectService.GetProjectManagerAsync(ticket.ProjectId);
+                Notification notification = new()
+                {
+                    NotificationTypeId = (await _lookupService.LookupNotificationTypeIdAsync(nameof(BTNotificationTypes.Ticket))).Value,
+                    TicketId = ticket.Id,
+                    Title = "New Ticket Added",
+                    Message = $"New Ticket: {ticket.Title}, was created by {btUser.FullName}",
+                    Created = DateTime.UtcNow,
+                    SenderId = btUser.Id,
+                    RecipientId = projectManager?.Id
+                };
+
+                await _notificationService.AddNotificationAsync(notification);
+                if (projectManager != null)
+                {
+                    await _notificationService.SendEmailNotificationAsync(notification, $"New Ticket Added For Project: {newTicket.Project!.Name}");
+                }
+                else
+                {
+                    await _notificationService.SendEmailNotificationsByRoleAsync(notification, companyId, nameof(BTRoles.Admin));
+                }
 
                 await _ticketService.AddNewTicketAsync(ticket);
                 return RedirectToAction(nameof(Index));
             }
 
-            int companyId = User.Identity!.GetCompanyId();
-            string userId = _userManager.GetUserId(User);
+            
 
             if (User.IsInRole(nameof(BTRoles.Admin)))
             {
@@ -276,6 +368,9 @@ namespace GenesisBugTracker.Controllers
 
             if (ModelState.IsValid)
             {
+                string userId = _userManager.GetUserId(User);
+                Ticket oldTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+
                 try
                 {
                     ticket.Created = DateTime.SpecifyKind(ticket.Created, DateTimeKind.Utc);
@@ -295,11 +390,16 @@ namespace GenesisBugTracker.Controllers
                         throw;
                     }
                 }
+
+                // TODO: Add History
+                Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+                await _ticketHistoryService.AddHistoryAsync(oldTicket, newTicket, userId);
+
                 return RedirectToAction(nameof(Index));
             }
-            //ViewData["DeveloperUserId"] = new SelectList(_context.Users, "Id", "Id", ticket.DeveloperUserId);
+            
             ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Description", ticket.ProjectId);
-            //ViewData["SubmitterUserId"] = new SelectList(_context.Users, "Id", "Id", ticket.SubmitterUserId);
+            
             ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name", ticket.TicketPriorityId);
             ViewData["TicketStatusId"] = new SelectList(_context.TicketStatuses, "Id", "Name", ticket.TicketStatusId);
             ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name", ticket.TicketTypeId);

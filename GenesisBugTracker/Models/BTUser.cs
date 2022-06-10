@@ -13,7 +13,7 @@ namespace GenesisBugTracker.Models
         public string? FirstName { get; set; }
 
         [Required]
-        [Display(Name = "First Name")]
+        [Display(Name = "Last Name")]
         [StringLength(40, ErrorMessage = "The {0} must be between {2} and {1} characters long.", MinimumLength = 2)]
         public string? LastName { get; set; }
 

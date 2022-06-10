@@ -45,7 +45,7 @@ namespace GenesisBugTracker.Services
             else
             {
                 //Check Ticket Title
-                if (oldTicket.Title != newTicket.Title)
+                if (oldTicket!.Title != newTicket!.Title)
                 {
                     TicketHistory history = new()
                     {
@@ -83,8 +83,8 @@ namespace GenesisBugTracker.Services
                     {
                         TicketId = newTicket.Id,
                         PropertyName = "TicketPriority",
-                        OldValue = oldTicket.TicketPriority.Name,
-                        NewValue = newTicket.TicketPriority.Name,
+                        OldValue = oldTicket.TicketPriority!.Name,
+                        NewValue = newTicket.TicketPriority!.Name,
                         Created = DateTime.UtcNow,
                         UserId = userId,
                         Description = $"New ticket priority: {newTicket.TicketPriority.Name}"
@@ -99,8 +99,8 @@ namespace GenesisBugTracker.Services
                     {
                         TicketId = newTicket.Id,
                         PropertyName = "TicketStatus",
-                        OldValue = oldTicket.TicketStatus.Name,
-                        NewValue = newTicket.TicketStatus.Name,
+                        OldValue = oldTicket.TicketStatus!.Name,
+                        NewValue = newTicket.TicketStatus!.Name,
                         Created = DateTime.UtcNow,
                         UserId = userId,
                         Description = $"New ticket Status: {newTicket.TicketStatus.Name}"
@@ -115,8 +115,8 @@ namespace GenesisBugTracker.Services
                     {
                         TicketId = newTicket.Id,
                         PropertyName = "TicketTypeId",
-                        OldValue = oldTicket.TicketType.Name,
-                        NewValue = newTicket.TicketType.Name,
+                        OldValue = oldTicket.TicketType!.Name,
+                        NewValue = newTicket.TicketType!.Name,
                         Created = DateTime.UtcNow,
                         UserId = userId,
                         Description = $"New ticket Type: {newTicket.TicketType.Name}"
@@ -135,7 +135,7 @@ namespace GenesisBugTracker.Services
                         NewValue = newTicket.DeveloperUser?.FullName,
                         Created = DateTime.UtcNow,
                         UserId = userId,
-                        Description = $"New ticket developer: {newTicket.DeveloperUser.FullName}"
+                        Description = $"New ticket developer: {newTicket.DeveloperUser!.FullName}"
 
                     };
                     await _context.TicketHistories.AddAsync(history);
@@ -161,9 +161,9 @@ namespace GenesisBugTracker.Services
         {
             try
             {
-                Ticket ticket = await _context.Tickets.FindAsync(ticketId);
+                Ticket? ticket = await _context.Tickets.FindAsync(ticketId);
                 string description = model.ToLower().Replace("ticket", "");
-                description = $"New {description} added to ticket: {ticket.Title}";
+                description = $"New {description} added to ticket: {ticket!.Title}";
 
 
                 TicketHistory history = new()
@@ -195,11 +195,11 @@ namespace GenesisBugTracker.Services
         {
             try
             {
-                List<Project> projects = (await _context.Companies.Include(c => c.Projects)
+                List<Project>? projects = (await _context.Companies.Include(c => c.Projects)
                                                                       .ThenInclude(p => p.Tickets)
                                                                           .ThenInclude(t => t.TicketHistories)
                                                                               .ThenInclude(h => h.User)
-                                                                  .FirstOrDefaultAsync(c => c.Id == companyId)).Projects.ToList();
+                                                                  .FirstOrDefaultAsync(c => c.Id == companyId)).Projects!.ToList();
 
                 List<Ticket> tickets = projects.SelectMany(p => p.Tickets).ToList();
 
@@ -221,7 +221,7 @@ namespace GenesisBugTracker.Services
         {
             try
             {
-                Project project = await _context.Projects.Where(p => p.CompanyId == companyId)
+                Project? project = await _context.Projects.Where(p => p.CompanyId == companyId)
                                                          .Include(p => p.Tickets)
                                                             .ThenInclude(t => t.TicketHistories)
                                                                 .ThenInclude(h => h.User)

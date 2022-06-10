@@ -32,6 +32,7 @@ builder.Services.AddScoped<IBTFileService, BTFileService>();
 builder.Services.AddScoped<IBTCompanyInfoService, BTCompanyInfoService>();
 builder.Services.AddScoped<IBTInviteService, BTInviteService>();
 builder.Services.AddScoped<IEmailSender, BTEmailService>();
+builder.Services.AddScoped<IBTTicketHistoryService, BTTicketHistoryService>();
 
 builder.Services.AddMvc();
 
