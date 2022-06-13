@@ -145,7 +145,7 @@ namespace GenesisBugTracker.Controllers
             if (ModelState.IsValid)
             {
                 BTUser btUser = await _userManager.GetUserAsync(User);
-                
+
                 Ticket oldTicket = await _ticketService.GetTicketAsNoTrackingAsync(model.Ticket!.Id);
                 try
                 {
@@ -206,33 +206,45 @@ namespace GenesisBugTracker.Controllers
                 return NotFound();
             }
 
+            AddTicketAttachmentViewModel model = new();
             Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+            model.Ticket = ticket;
+            model.UserId = _userManager.GetUserId(User);
 
             if (ticket == null)
             {
                 return NotFound();
             }
 
-            return View(ticket);
+            return View(model);
         }
 
-        // POST: Tickets/AddTicketAttachment
+        //POST: Tickets/AddTicketAttachment
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTicketAttachment([Bind("Id,FormFile,Description,TicketId")] TicketAttachment ticketAttachment)
+        public async Task<IActionResult> AddTicketAttachment(AddTicketAttachmentViewModel model)
         {
             string statusMessage;
 
-            if (ModelState.IsValid && ticketAttachment.FormFile != null)
+            if (model.FormFile == null)
             {
-                ticketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(ticketAttachment.FormFile);
-                ticketAttachment.FileName = ticketAttachment.FormFile.FileName;
-                ticketAttachment.FileContentType = ticketAttachment.FormFile.ContentType;
+                return NotFound();
+            }
 
-                ticketAttachment.Created = DateTime.UtcNow;
-                ticketAttachment.UserId = _userManager.GetUserId(User);
+            if (ModelState.IsValid)
+            {
+                TicketAttachment ticketAttachment = new();
+                model.TicketAttachment = ticketAttachment;
+                model.TicketAttachment.TicketId = model.TicketId;
+                
+                model.TicketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(model.FormFile);
+                model.TicketAttachment.FileName = model.FormFile.FileName;
+                model.TicketAttachment.FileContentType = model.FormFile.ContentType;
 
-                await _ticketService.AddTicketAttachmentAsync(ticketAttachment);
+                model.TicketAttachment.Created = DateTime.UtcNow;
+                model.TicketAttachment.UserId = _userManager.GetUserId(User);
+
+                await _ticketService.AddTicketAttachmentAsync(model.TicketAttachment!);
                 statusMessage = "Success: New attachment added to Ticket.";
             }
             else
@@ -241,7 +253,7 @@ namespace GenesisBugTracker.Controllers
 
             }
 
-            return RedirectToAction("Details", new { id = ticketAttachment.TicketId, message = statusMessage });
+            return RedirectToAction("Details", new { id = model.TicketAttachment!.TicketId, message = statusMessage });
         }
 
         // GET: Tickets/Create
@@ -258,7 +270,7 @@ namespace GenesisBugTracker.Controllers
             {
                 ViewData["ProjectId"] = new SelectList(await _projectService.GetUserProjectsAsync(userId), "Id", "Name");
             }
-            
+
             ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name");
             ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name");
             return View();
@@ -314,7 +326,7 @@ namespace GenesisBugTracker.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            
+
 
             if (User.IsInRole(nameof(BTRoles.Admin)))
             {
@@ -397,9 +409,9 @@ namespace GenesisBugTracker.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
-            
+
             ViewData["ProjectId"] = new SelectList(_context.Projects, "Id", "Description", ticket.ProjectId);
-            
+
             ViewData["TicketPriorityId"] = new SelectList(_context.TicketPriorities, "Id", "Name", ticket.TicketPriorityId);
             ViewData["TicketStatusId"] = new SelectList(_context.TicketStatuses, "Id", "Name", ticket.TicketStatusId);
             ViewData["TicketTypeId"] = new SelectList(_context.TicketTypes, "Id", "Name", ticket.TicketTypeId);
@@ -438,7 +450,7 @@ namespace GenesisBugTracker.Controllers
             {
                 await _ticketService.ArchiveTicketAsync(ticket);
             }
-            
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -482,7 +494,7 @@ namespace GenesisBugTracker.Controllers
 
         private bool TicketExists(int id)
         {
-          return (_context.Tickets?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Tickets?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

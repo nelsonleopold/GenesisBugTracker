@@ -128,18 +128,17 @@ namespace GenesisBugTracker.Services
         {
             try
             {
-                Ticket ticket = await _context.Tickets.Where(t => t.Id == ticketId)
-                                              .Include(t => t.DeveloperUser)
-                                              .Include(t => t.Project)
-                                              .Include(t => t.SubmitterUser)
-                                              .Include(t => t.TicketPriority)
-                                              .Include(t => t.TicketStatus)
-                                              .Include(t => t.TicketType)
-                                              .Include(t => t.Comments)
-                                              .Include(t => t.Attachments)
-                                              .Include(t => t.Notifications)
-                                              .Include(t => t.TicketHistories)
-                                              .FirstAsync();
+                Ticket? ticket = await _context.Tickets.Include(t => t.DeveloperUser)
+                                                       .Include(t => t.Project)
+                                                       .Include(t => t.SubmitterUser)
+                                                       .Include(t => t.TicketPriority)
+                                                       .Include(t => t.TicketStatus)
+                                                       .Include(t => t.TicketType)
+                                                       .Include(t => t.Comments)
+                                                       .Include(t => t.Attachments)
+                                                       .Include(t => t.Notifications)
+                                                       .Include(t => t.TicketHistories)
+                                                       .FirstOrDefaultAsync(t => t.Id == ticketId);
                 return ticket;
             }
             catch (Exception)

@@ -213,7 +213,7 @@ textarea:focus {
 	padding-top: 112px;
 	padding-top: 7rem;
 	right: 0;
-	background: #f7f7f7 none repeat scroll 0 0
+	background: #F2EEE4 none repeat scroll 0 0
 }
 
 #content>.page-content {
@@ -6383,7 +6383,7 @@ ul.work_history>li>p>span {
 	-webkit-box-pack: center;
 	-ms-flex-pack: center;
 	justify-content: center;
-	min-height: 100vh;
+	min-height: 50vh;
 	text-align: center;
 }
 

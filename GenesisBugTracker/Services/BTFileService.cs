@@ -23,7 +23,6 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
-
         #endregion
 
         #region Convert File to Byte Array
