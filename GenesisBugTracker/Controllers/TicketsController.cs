@@ -256,6 +256,25 @@ namespace GenesisBugTracker.Controllers
             return RedirectToAction("Details", new { id = model.TicketAttachment!.TicketId, message = statusMessage });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddTicketComment(TicketComment ticketComment)
+        {
+            return View();
+        }
+
+        public async Task<IActionResult> ShowFile(int id)
+        {
+            TicketAttachment ticketAttachment = await _ticketService.GetTicketAttachmentsByIdAsync(id);
+            string fileName = ticketAttachment.FileName!;
+            byte[] fileData = ticketAttachment.FileData!;
+            string ext = Path.GetExtension(fileName).Replace(".", "");
+
+            Response.Headers.Add("Content-Disposition", $"inline; filename={fileName}");
+            return File(fileData, $"application/{ext}");
+
+        }
+
         // GET: Tickets/Create
         public async Task<IActionResult> Create()
         {

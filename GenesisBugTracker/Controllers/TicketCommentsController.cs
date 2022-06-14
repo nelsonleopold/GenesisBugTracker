@@ -7,16 +7,28 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using GenesisBugTracker.Data;
 using GenesisBugTracker.Models;
+using GenesisBugTracker.Extensions;
+using GenesisBugTracker.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
 
 namespace GenesisBugTracker.Controllers
 {
     public class TicketCommentsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IBTTicketService _ticketService;
+        private readonly UserManager<BTUser> _userManager;
+        private readonly IBTProjectService _projectService;
 
-        public TicketCommentsController(ApplicationDbContext context)
+        public TicketCommentsController(ApplicationDbContext context,
+                                        IBTTicketService ticketService,
+                                        UserManager<BTUser> userManager,
+                                        IBTProjectService projectService)
         {
             _context = context;
+            _ticketService = ticketService;
+            _userManager = userManager;
+            _projectService = projectService;
         }
 
         // GET: TicketComments
@@ -46,30 +58,50 @@ namespace GenesisBugTracker.Controllers
             return View(ticketComment);
         }
 
-        // GET: TicketComments/Create
-        public IActionResult Create()
-        {
-            ViewData["TicketId"] = new SelectList(_context.Tickets, "Id", "Description");
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id");
-            return View();
-        }
+        //// GET: TicketComments/Create
+        //public IActionResult Create()
+        //{
+        //    ViewData["TicketId"] = new SelectList(_context.Tickets, "Id", "Description");
+        //    ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id");
+        //    return View();
+        //}
 
-        // POST: TicketComments/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        //// POST: TicketComments/Create
+        //// To protect from overposting attacks, enable the specific properties you want to bind to.
+        //// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Comment,Created,TicketId,UserId")] TicketComment ticketComment)
         {
             if (ModelState.IsValid)
             {
+                int companyId = User.Identity!.GetCompanyId();
+                List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
+                Ticket ticket = tickets.FirstOrDefault(t => t.Id == ticketComment.TicketId)!;
+                //Project? project = ticket.Project;
+                BTUser currentUser = await _userManager.GetUserAsync(User);
+                BTUser ticketSubmitter = ticket.SubmitterUser!;
+                BTUser ticketDeveloper = ticket.DeveloperUser!;
+                BTUser projectManager = await _projectService.GetProjectManagerAsync(ticket.ProjectId);
+
+                if (string.IsNullOrEmpty(ticketComment.Comment))
+                {
+                    return RedirectToAction("Details", "Tickets", new { Id = ticketComment.Id });
+                }
+
+                ticketComment.Created = DateTime.UtcNow;
+                ticketComment.UserId = currentUser.Id;
+
                 _context.Add(ticketComment);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                return RedirectToAction("Details", "Tickets", new { Id = ticket.Id });
             }
             ViewData["TicketId"] = new SelectList(_context.Tickets, "Id", "Description", ticketComment.TicketId);
             ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", ticketComment.UserId);
-            return View(ticketComment);
+
+            return RedirectToAction("Details", "Tickets", new { Id = ticketComment.Id });
         }
 
         // GET: TicketComments/Edit/5
