@@ -2,8 +2,85 @@
 @using GenesisBugTracker.Models.Enums
 
 
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="breadcromb-area">
+            <div class="row">
+                <div class="col-md-6 col-sm-6">
+                    <div class="seipkon-breadcromb-left">
+                        <h3>Dashboard</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Pills -->
+<div class="row my-3">
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="AllProjects" asp-controller="Projects" style="text-decoration:none">
+            <div class="card text-center bg-info">
+                <div class="body">
+                    <div class="p-15 text-light">
+                        <h3>@Model.Projects!.Where(p => p.StartDate < DateTime.Now && p.EndDate > DateTime.Now).Count()</h3>
+                        <span>Active Projects</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="AllTickets" asp-controller="Tickets" style="text-decoration:none">
+            <div class="card text-center bg-secondary">
+                <div class="body">
+                    <div class="p-15 text-light">
+
+                        <h3>@Model.Tickets.Count()</h3>
+                        <span>Total Tickets</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="UnassignedTickets" asp-controller="Tickets" style="text-decoration:none">
+            <div class="card text-center bg-warning">
+                <div class="body">
+                    <div class="p-15 text-light">
+                        <h3>@Model.Tickets.Where(t => string.IsNullOrEmpty(t.DeveloperUserId)).Count()</h3>
+                        <span>Unassigned Tickets</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card text-center bg-dark">
+            <div class="body">
+                <div class="p-15 text-light">
+                    <h3>
+                        @(
+                        Model.Projects!.Count()
+                        + Model.Tickets.Count()
+                        + Model.Members!.Count()
+                        )
+                    </h3>
+                    <span>Total Data</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
 <div class="table-responsive" style="overflow-y:auto;height:600px;">
-    <table class="table table-hover">
+    <table class="table display table-hover">
         <thead class="">
             <tr>
                 @* Table header *@
@@ -51,6 +128,115 @@
             }
         </tbody>
     </table>
-
-
 </div>
+
+@*<!-- Right Side Content Start -->
+<section id="content" class="seipkon-content-wrapper">
+    <div class="page-content">
+        <div class="container-fluid">
+
+
+            <!-- Chart Row Start -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="page-box">
+                        <div class="chart-example">
+                            <h3>Bar Chart</h3>
+                            <div id="morris_bar_chart"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="page-box">
+                        <div class="chart-example">
+                            <h3>Area Chart</h3>
+                            <div id="morris_area_chart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End Chart Row -->
+            <!-- Chart Row Start -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="page-box">
+                        <div class="chart-example">
+                            <h3>Line Chart</h3>
+                            <div id="morris_line_chart"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="page-box">
+
+                        <div class="card-body">
+                            <h5>Tickets by Priority</h5>
+                            <p>[Morris Charts]</p>
+                            <!-- Morris: Donut -->
+                            <div class="col-md-12">
+                                <div id="legend" class="donut-legend" style="font-size:x-small"></div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="chart chart-md" id="morrisTicketPriority"></div>
+                            </div>
+                        </div>
+                        @*<div class="chart-example">
+                        <h3>Donut Chart</h3>
+                        <div id="morris_donut_chart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End Chart Row -->
+        </div>
+    </div>
+</section>
+
+
+*@
+
+
+@section Scripts {
+    @* Morris Donut Chart *@
+    <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+    <script>
+
+        var morrisDonutData = [{
+            label: "Low",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Low)).Count()
+                                            }, {
+            label: "Medium",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Medium)).Count()
+                                            }, {
+            label: "High",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.High)).Count()
+                                            }, {
+            label: "Urgent",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Urgent)).Count()
+                                            }];
+
+
+        /*
+        Morris: Donut
+        */
+        if ($('#morrisTicketPriority').get(0)) {
+            var donutChart = Morris.Donut({
+                resize: true,
+                element: 'morrisTicketPriority',
+                data: morrisDonutData,
+                colors: ['#0088cc', '#734ba9', '#E36159', '#ff993b']
+            });
+
+            donutChart.options.data.forEach(function(label, i) {
+                var legendItem = $('<span></span>').text(label['label'] + ": " + label['value']).prepend('<span>&nbsp;</span>');
+                legendItem.find('span')
+                    .css('backgroundColor', donutChart.options.colors[i])
+                    .css('width', '20px')
+                    .css('display', 'inline-block')
+                    .css('margin', '10px');
+                $('#legend').append(legendItem)
+            });
+        };
+    </script>
+}

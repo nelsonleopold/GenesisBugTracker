@@ -213,7 +213,7 @@ textarea:focus {
 	padding-top: 112px;
 	padding-top: 7rem;
 	right: 0;
-	background: #F2EEE4 none repeat scroll 0 0
+	background: #fff none repeat scroll 0 0
 }
 
 #content>.page-content {
@@ -6285,7 +6285,7 @@ ul.work_history>li>p>span {
 }
 
 .login-page-logo img {
-	width: 200px
+	width: 200px;
 }
 
 .login-page-logo-right {

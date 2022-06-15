@@ -37,16 +37,16 @@ namespace GenesisBugTracker.Controllers
             _fileService = fileService;
         }
 
-        // GET: Projects
-        [Authorize]
-        public async Task<IActionResult> Index()
-        {
-            int companyId = User.Identity!.GetCompanyId();
+        //// GET: Projects
+        //[Authorize]
+        //public async Task<IActionResult> Index()
+        //{
+        //    int companyId = User.Identity!.GetCompanyId();
 
-            List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
+        //    List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
 
-            return View(projects);
-        }
+        //    return View(projects);
+        //}
 
         // GET: Projects/All
         public async Task<IActionResult> AllProjects()

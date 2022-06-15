@@ -1,0 +1,32 @@
+﻿@model GenesisBugTracker.Models.Invite
+
+@{
+    ViewData["Title"] = "Process Invite";
+    Layout = "/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="row container-fluid login-form-area">
+    <div class="col-md-4 col-md-offset-4">
+        <div class="panel login-form-box">
+            <div class="card-title mt-3 text-center form-group">
+                <h2 class="title text-uppercase font-weight-bold m-0"> Invite</h2>
+            </div>
+            <div class="header form-group">
+                <h3>
+                    <span class="clearfix title">
+                        <span class="number"><h2>Welcome</h2></span><br />
+                        <span><h3>@Model.InviteeFirstName @Model.InviteeLastName!</h3></span> <br>
+                    </span>
+                </h3>
+                <h5><span>Company Name: @Model.Company!.Name </span></h5>
+            </div>
+            <div class="card-body form-group">
+                <p>
+                    @Model.Invitor!.FullName has invited you to collaborate on the @Model.Project!.Name project.
+                    <br /><br /> Click the "JOIN" button below to register with the company and begin entering tickets.
+                </p>
+                <a class="btn btn-primary btn-lg btn-block" asp-area="Identity" asp-page="/Account/RegisterByInvite" asp-route-id="@Model.Id" asp-route-companyId="@Model.CompanyId"><i class="bi bi-box-arrow-in-right"></i> <span>JOIN</span></a>
+            </div>
+        </div>
+    </div>
+</div>

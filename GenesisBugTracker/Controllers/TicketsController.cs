@@ -50,16 +50,16 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Tickets
-        [Authorize]
-        public async Task<IActionResult> Index()
-        {
-            int companyId = User.Identity!.GetCompanyId();
+        //[Authorize]
+        //public async Task<IActionResult> Index()
+        //{
+        //    int companyId = User.Identity!.GetCompanyId();
 
-            List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
+        //    List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
 
 
-            return View(tickets);
-        }
+        //    return View(tickets);
+        //}
 
         // GET: Tickets/AllTickets
         [Authorize]
@@ -72,18 +72,6 @@ namespace GenesisBugTracker.Controllers
             return View(tickets);
         }
 
-        // GET: Tickets/MyTickets
-        [Authorize]
-        public async Task<IActionResult> MyTickets()
-        {
-            int companyId = User.Identity!.GetCompanyId();
-            string userId = _userManager.GetUserId(User);
-
-            List<Ticket> tickets = await _ticketService.GetTicketsByUserIdAsync(userId, companyId);
-
-            return View(tickets);
-        }
-
         // GET: Tickets/ArchivedTickets
         [Authorize]
         public async Task<IActionResult> ArchivedTickets()
@@ -92,6 +80,18 @@ namespace GenesisBugTracker.Controllers
 
             List<Ticket> tickets = await _ticketService.GetAllArchivedTicketsAsync(companyId);
 
+
+            return View(tickets);
+        }
+
+        // GET: Tickets/MyTickets
+        [Authorize]
+        public async Task<IActionResult> MyTickets()
+        {
+            int companyId = User.Identity!.GetCompanyId();
+            string userId = _userManager.GetUserId(User);
+
+            List<Ticket> tickets = await _ticketService.GetTicketsByUserIdAsync(userId, companyId);
 
             return View(tickets);
         }

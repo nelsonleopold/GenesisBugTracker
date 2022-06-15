@@ -44,13 +44,22 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Invites
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Invites.Include(i => i.Company).Include(i => i.Invitee).Include(i => i.Invitor).Include(i => i.Project);
+            int companyId = User.Identity!.GetCompanyId();
+            var applicationDbContext = _context.Invites.Where(i => i.CompanyId == companyId)
+                                                       .Include(i => i.Company)
+                                                       .Include(i => i.Invitee)
+                                                       .Include(i => i.Invitor)
+                                                       .Include(i => i.Project);
+                                                       
+
             return View(await applicationDbContext.ToListAsync());
         }
 
         // GET: Invites/Details/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.Invites == null)
@@ -92,7 +101,7 @@ namespace GenesisBugTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,ProjectId,InviteeEmail,InviteeFirstName,InviteeLastName,Message")] Invite invite)
         {
-            ModelState.Remove("Invitorid");
+            ModelState.Remove("InvitorId");
             int companyId = User.Identity!.GetCompanyId();
 
             if (ModelState.IsValid)
@@ -124,7 +133,7 @@ namespace GenesisBugTracker.Controllers
 
                     await _inviteService.AddNewInviteAsync(invite);
 
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Dashboard", "Home");
                 }
                 catch (Exception)
                 {
@@ -139,10 +148,33 @@ namespace GenesisBugTracker.Controllers
             return View(invite);
         }
 
-        [HttpPost]
+        [AllowAnonymous]
+        [HttpGet]
         public async Task<IActionResult> ProcessInvite(string token, string email, string company)
         {
-            return View();
+            if (token == null)
+            {
+                return NotFound();
+            }
+
+            Guid companyToken = Guid.Parse(_dataProtector.Unprotect(token));
+            string inviteeEmail = _dataProtector.Unprotect(email);
+            int companyId = int.Parse(_dataProtector.Unprotect(company));
+
+            try
+            {
+                Invite invite = await _inviteService.GetInviteAsync(companyToken, inviteeEmail, companyId);
+
+                if (invite != null)
+                {
+                    return View(invite);
+                }
+                return NotFound();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

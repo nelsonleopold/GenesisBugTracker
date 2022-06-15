@@ -21,10 +21,11 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using GenesisBugTracker.Data;
 using GenesisBugTracker.Models.Enums;
+using GenesisBugTracker.Services.Interfaces;
 
 namespace GenesisBugTracker.Areas.Identity.Pages.Account
 {
-    public class RegisterModel : PageModel
+    public class RegisterByInviteModel : PageModel
     {
         private readonly SignInManager<BTUser> _signInManager;
         private readonly UserManager<BTUser> _userManager;
@@ -33,14 +34,18 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
         private readonly ApplicationDbContext _context;
+        private readonly IBTProjectService _projectService;
+        private readonly IBTInviteService _inviteService;
 
-        public RegisterModel(
+        public RegisterByInviteModel(
             UserManager<BTUser> userManager,
             IUserStore<BTUser> userStore,
             SignInManager<BTUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IBTProjectService projectService,
+            IBTInviteService inviteService)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -49,6 +54,8 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
             _logger = logger;
             _emailSender = emailSender;
             _context = context;
+            _projectService = projectService;
+            _inviteService = inviteService;
         }
 
         /// <summary>
@@ -56,7 +63,7 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new();
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -79,6 +86,26 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
             /// <summary>
             ///     Custom Input Model Property
             /// </summary>
+            
+            [Display(Name = "Company")]
+            public string Company { get; set; }
+
+            /// <summary>
+            ///     Custom Input Model Property
+            /// </summary>
+            [Required]
+            [Display(Name = "Company Id")]
+            public int CompanyId { get; set; }
+
+            /// <summary>
+            ///     Custom Input Model Property
+            /// </summary>
+            [Required]
+            [Display(Name = "Project Id")]
+            public int ProjectId { get; set; }
+            /// <summary>
+            ///     Custom Input Model Property
+            /// </summary>
             [Required]
             [Display(Name = "First Name")]
             public string FirstName { get; set; }
@@ -89,20 +116,6 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "Last Name")]
             public string LastName { get; set; }
-
-            /// <summary>
-            ///     Custom Input Model Property
-            /// </summary>
-            [Required]
-            [Display(Name = "Company Name")]
-            public string CompanyName { get; set; }
-
-            /// <summary>
-            ///     Custom Input Model Property
-            /// </summary>
-            [Required]
-            [Display(Name = "Company Description")]
-            public string CompanyDescription { get; set; }
 
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -134,10 +147,21 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
         }
 
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(int id, int companyId, string returnUrl = null)
         {
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+            // Use "id" to find the invite
+            Invite invite = await _inviteService.GetInviteAsync(id, companyId);
+
+            // Load input model with the Invite information
+            Input.Email = invite.InviteeEmail;
+            Input.FirstName = invite.InviteeFirstName;
+            Input.LastName = invite.InviteeLastName;
+            Input.Company = invite.Company.Name;
+            Input.CompanyId = invite.CompanyId;
+            Input.ProjectId = invite.ProjectId;
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -146,17 +170,8 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
             {
-                // Create A New Company
-                Company company = new()
-                {
-                    Name = Input.CompanyName,
-                    Description = Input.CompanyDescription
-                };
-                await _context.AddAsync(company);
-                await _context.SaveChangesAsync();
-
                 // Create A New User
-                var user = CreateUser(company.Id);
+                var user = CreateUser(Input.CompanyId);
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
@@ -166,9 +181,15 @@ namespace GenesisBugTracker.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    await _userManager.AddToRoleAsync(user, nameof(BTRoles.Admin));
-
                     var userId = await _userManager.GetUserIdAsync(user);
+
+                    // Add the new user to the dedicated project
+                    await _projectService.AddUserToProjectAsync(userId, Input.ProjectId);
+
+                    // Add the new User to a default role
+                    await _userManager.AddToRoleAsync(user, nameof(BTRoles.Submitter));
+
+
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
                     var callbackUrl = Url.Page(
