@@ -49,25 +49,29 @@ namespace GenesisBugTracker.Controllers
             _fileService = fileService;
         }
 
-        // GET: Tickets
-        //[Authorize]
-        //public async Task<IActionResult> Index()
-        //{
-        //    int companyId = User.Identity!.GetCompanyId();
+        // GET: Tickets/Index
+        // This gets all unarchived tickets
+        [Authorize]
+        public async Task<IActionResult> Index()
+        {
+            int companyId = User.Identity!.GetCompanyId();
 
-        //    List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
+            List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
 
 
-        //    return View(tickets);
-        //}
+            return View(tickets);
+        }
 
         // GET: Tickets/AllTickets
+        // This gets all tickets, both unarchived and archived
         [Authorize]
         public async Task<IActionResult> AllTickets()
         {
             int companyId = User.Identity!.GetCompanyId();
 
             List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyIdAsync(companyId);
+            List<Ticket> archivedTickets = await _ticketService.GetAllArchivedTicketsAsync(companyId);
+            tickets = tickets.Concat(archivedTickets).ToList();
 
             return View(tickets);
         }
@@ -205,9 +209,10 @@ namespace GenesisBugTracker.Controllers
             {
                 return NotFound();
             }
-
+            
             AddTicketAttachmentViewModel model = new();
             Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+            
             model.Ticket = ticket;
             model.UserId = _userManager.GetUserId(User);
 
@@ -236,7 +241,7 @@ namespace GenesisBugTracker.Controllers
                 TicketAttachment ticketAttachment = new();
                 model.TicketAttachment = ticketAttachment;
                 model.TicketAttachment.TicketId = model.TicketId;
-                
+
                 model.TicketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(model.FormFile);
                 model.TicketAttachment.FileName = model.FormFile.FileName;
                 model.TicketAttachment.FileContentType = model.FormFile.ContentType;

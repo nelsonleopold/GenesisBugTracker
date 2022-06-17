@@ -6,7 +6,10 @@
 }
 
 <h1>All Tickets</h1>
+<br />
+<h4>All tickets inlcudes both unarchived and archived tickets.</h4>
 
+<br />
 <p>
     <a asp-action="Create">Create New</a>
 </p>
@@ -22,9 +25,6 @@
                                 <tr>
                                     <th>
                                         @Html.DisplayNameFor(model => model.Title)
-                                    </th>
-                                    <th>
-                                        @Html.DisplayNameFor(model => model.Description)
                                     </th>
                                     <th>
                                         @Html.DisplayNameFor(model => model.Created)
@@ -47,6 +47,9 @@
                                     <th>
                                         @Html.DisplayNameFor(model => model.SubmitterUser)
                                     </th>
+                                    <th>
+                                        @Html.DisplayNameFor(model => model.DeveloperUser)
+                                    </th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -59,9 +62,6 @@
                                                 @Html.DisplayFor(modelItem => item.Title)
                                             </a>
 
-                                        </td>
-                                        <td>
-                                            @Html.DisplayFor(modelItem => item.Description)
                                         </td>
                                         <td>
                                             @Html.DisplayFor(modelItem => item.Created)
@@ -87,14 +87,21 @@
                                             @Html.DisplayFor(modelItem => item.SubmitterUser!.FullName)
                                         </td>
                                         <td>
-                                            <div class="row-col-1 mb-2">
-                                                @if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+                                            @if (item.DeveloperUserId != null)
+                                            {
+                                                @item.DeveloperUser?.FullName
+                                            }
+                                            else
+                                            {
+                                                if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
                                                 {
                                                     <div class="single-button-item">
                                                         <button class="btn btn-xs btn-warning btn-rounded"><a asp-action="AssignDeveloper" asp-route-id="@item.Id">Assign Dev</a></button>
                                                     </div>
                                                 }
-                                            </div>
+                                            }
+                                        </td>
+                                        <td>
                                             <div class="row-col-1">
                                                 <a asp-action="Details" asp-route-id="@item.Id" class="page-table-success" data-toggle="tooltip" title="View"><i class="fa fa-eye"></i></a>
 

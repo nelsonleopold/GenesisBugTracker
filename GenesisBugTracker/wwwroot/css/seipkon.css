@@ -1199,12 +1199,28 @@ a[aria-expanded="true"]:before {
 	background: #3582c6 none repeat scroll 0 0;
 }
 
+.widget_bg_dark_blue .widget-page-text h2 {
+	background: #0F385C none repeat scroll 0 0;
+}
+
 .widget_bg_blue .widget-icon {
 	background: #3582c6 none repeat scroll 0 0;
 }
 
+.widget_bg_dark_blue .widget-icon {
+	background: #0F385C none repeat scroll 0 0;
+}
+
+.widget_bg_yellow .widget-page-text h2 {
+	background: #FCBC23 none repeat scroll 0 0;
+}
+
 .widget_bg_dark_yellow .widget-page-text h2 {
 	background: #C97730 none repeat scroll 0 0;
+}
+
+.widget_bg_yellow .widget-icon {
+	background: #FCBC23 none repeat scroll 0 0;
 }
 
 .widget_bg_dark_yellow .widget-icon {
@@ -1215,15 +1231,31 @@ a[aria-expanded="true"]:before {
 	background: #BC5AE6 none repeat scroll 0 0;
 }
 
+.widget_bg_dark_purple .widget-page-text h2 {
+	background: #532866 none repeat scroll 0 0;
+}
+
 .widget_bg_purple .widget-icon {
 	background: #BC5AE6 none repeat scroll 0 0;
 }
 
+.widget_bg_dark_purple .widget-icon {
+	background: #532866 none repeat scroll 0 0;
+}
+
 .widget_bg_dark_red .widget-page-text h2 {
+	background: #541E2D none repeat scroll 0 0;
+}
+
+.widget_bg_red .widget-page-text h2 {
 	background: #D44D72 none repeat scroll 0 0;
 }
 
 .widget_bg_dark_red .widget-icon {
+	background: #541E2D none repeat scroll 0 0;
+}
+
+.widget_bg_red .widget-icon {
 	background: #D44D72 none repeat scroll 0 0;
 }
 

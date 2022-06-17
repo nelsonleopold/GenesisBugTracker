@@ -11,6 +11,7 @@ namespace GenesisBugTracker.Services.Interfaces
         public Task<List<Ticket>> GetAllTicketsByCompanyIdAsync(int companyId);
         public Task<Ticket> GetTicketAsNoTrackingAsync(int ticketId);
         public Task<TicketAttachment> GetTicketAttachmentsByIdAsync(int ticketAttachmentId);
+        public Task<Ticket> GetArchivedTicketByIdAsync(int ticketId);
         public Task<Ticket> GetTicketByIdAsync(int ticketId);
         public Task<List<Ticket>> GetTicketsByUserIdAsync(string userId, int companyId);
         public Task<List<Ticket>> GetUnassignedTicketsAsync(int companyId);

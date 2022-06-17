@@ -70,6 +70,15 @@ namespace GenesisBugTracker.Services
                                                                       .Where(p => p.CompanyId == companyId)
                                                                       .SelectMany(p => p.Tickets)
                                                                         .Where(t => t.Archived == true)
+                                                                        .Include(t => t.Attachments)
+                                                                        .Include(t => t.Comments)
+                                                                        .Include(t => t.DeveloperUser)
+                                                                        .Include(t => t.TicketHistories)
+                                                                        .Include(t => t.SubmitterUser)
+                                                                        .Include(t => t.TicketPriority)
+                                                                        .Include(t => t.TicketStatus)
+                                                                        .Include(t => t.TicketType)
+                                                                        .Include(t => t.Project)
                                                                       .ToListAsync();
                 return archivedTickets;
             }
@@ -137,6 +146,33 @@ namespace GenesisBugTracker.Services
                 throw;
             }
         }
+
+        #region Get Archived Ticket By Id Async
+        public async Task<Ticket> GetArchivedTicketByIdAsync(int ticketId)
+        {
+            try
+            {
+                Ticket? ticket = await _context.Tickets.Where(t => t.Archived == true)
+                                                       .Include(t => t.DeveloperUser)
+                                                       .Include(t => t.Project)
+                                                       .Include(t => t.SubmitterUser)
+                                                       .Include(t => t.TicketPriority)
+                                                       .Include(t => t.TicketStatus)
+                                                       .Include(t => t.TicketType)
+                                                       .Include(t => t.Comments)
+                                                       .Include(t => t.Attachments)
+                                                       .Include(t => t.Notifications)
+                                                       .Include(t => t.TicketHistories)
+                                                       .FirstOrDefaultAsync(t => t.Id == ticketId);
+                return ticket;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+        #endregion
 
         #region Get Ticket By Id Async
         public async Task<Ticket> GetTicketByIdAsync(int ticketId)
@@ -265,6 +301,6 @@ namespace GenesisBugTracker.Services
             }
         }
         #endregion
-      
+
     }
 }

@@ -1,5 +1,21 @@
 ﻿@model GenesisBugTracker.Models.ViewModels.DashboardViewModel
+@using GenesisBugTracker.Extensions
 @using GenesisBugTracker.Models.Enums
+@using Microsoft.AspNetCore.Identity
+@using GenesisBugTracker.Services.Interfaces
+
+@inject UserManager<BTUser> UserManager
+@inject IBTTicketService TicketService
+@inject IBTProjectService ProjectService
+
+@{
+    int companyId = User.Identity!.GetCompanyId();
+    BTUser btUser = await UserManager.GetUserAsync(User);
+    List<Ticket> archivedTickets = await TicketService.GetAllArchivedTicketsAsync(companyId);
+    List<Project> unassignedProjects = await ProjectService.GetUnassignedProjectsAsync(companyId);
+    List<Project> archivedProjects = await ProjectService.GetAllArchivedProjectsAsync(companyId);
+    List<Project> userProjects = await ProjectService.GetUserProjectsAsync(btUser.Id);
+}
 
 
 
@@ -20,211 +36,267 @@
 <!-- Info Pills -->
 <div class="row my-3">
     <div class="col-lg-3 col-md-6 col-sm-6">
-        <a asp-action="AllProjects" asp-controller="Projects" style="text-decoration:none">
-            <div class="card text-center bg-info">
-                <div class="body">
-                    <div class="p-15 text-light">
-                        <h3>@Model.Projects!.Where(p => p.StartDate < DateTime.Now && p.EndDate > DateTime.Now).Count()</h3>
-                        <span>Active Projects</span>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-lg-3 col-md-6 col-sm-6">
         <a asp-action="AllTickets" asp-controller="Tickets" style="text-decoration:none">
-            <div class="card text-center bg-secondary">
-                <div class="body">
-                    <div class="p-15 text-light">
-
-                        <h3>@Model.Tickets.Count()</h3>
-                        <span>Total Tickets</span>
-                    </div>
+            <div class="widget_card_page grid_flex widget_bg_dark_blue">
+                <div class="widget-icon">
+                    <i class="fa fa-ticket"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@(Model.Tickets!.Count() + archivedTickets.Count())</h4>
+                    <h2>Total Tickets</h2>
                 </div>
             </div>
         </a>
     </div>
     <div class="col-lg-3 col-md-6 col-sm-6">
         <a asp-action="UnassignedTickets" asp-controller="Tickets" style="text-decoration:none">
-            <div class="card text-center bg-warning">
-                <div class="body">
-                    <div class="p-15 text-light">
-                        <h3>@Model.Tickets.Where(t => string.IsNullOrEmpty(t.DeveloperUserId)).Count()</h3>
-                        <span>Unassigned Tickets</span>
-                    </div>
+            <div class="widget_card_page grid_flex widget_bg_dark_yellow">
+                <div class="widget-icon">
+                    <i class="fa fa-ticket"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@Model.Tickets!.Where(t => string.IsNullOrEmpty(t.DeveloperUserId)).Count()</h4>
+                    <h2>Unassigned Tickets</h2>
                 </div>
             </div>
         </a>
     </div>
     <div class="col-lg-3 col-md-6 col-sm-6">
-        <div class="card text-center bg-dark">
-            <div class="body">
-                <div class="p-15 text-light">
-                    <h3>
-                        @(
-                        Model.Projects!.Count()
-                        + Model.Tickets.Count()
-                        + Model.Members!.Count()
-                        )
-                    </h3>
-                    <span>Total Data</span>
+        <a asp-action="ArchivedTickets" asp-controller="Tickets" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_dark_purple">
+                <div class="widget-icon">
+                    <i class="fa fa-ticket"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@archivedTickets.Count()</h4>
+                    <h2>Archived Tickets</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="MyTickets" asp-controller="Tickets" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_dark_red">
+                <div class="widget-icon">
+                    <i class="fa fa-ticket"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@Model.Tickets!.Where(t => t.DeveloperUserId == btUser.Id).Count()</h4>
+                    <h2>My Tickets</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row my-3">
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="AllProjects" asp-controller="Projects" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_blue">
+                <div class="widget-icon">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@Model.Projects!.Count()</h4>
+                    <h2>Total Projects</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="UnassignedProjects" asp-controller="Projects" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_yellow">
+                <div class="widget-icon">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@unassignedProjects.Count()</h4>
+                    <h2>Unassigned Projects</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="ArchivedProjects" asp-controller="Projects" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_purple">
+                <div class="widget-icon">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@archivedProjects.Count()</h4>
+                    <h2>Archived Projects</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <a asp-action="MyProjects" asp-controller="Projects" style="text-decoration:none">
+            <div class="widget_card_page grid_flex widget_bg_red">
+                <div class="widget-icon">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <div class="widget-page-text">
+                    <h4>@userProjects.Count()</h4>
+                    <h2>My Projects</h2>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Right Side Content Start -->
+<div class="row">
+    <div class="col">
+        <!-- Chart Row Start -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="page-box">
+
+                    <div class="card-body">
+                        <h5>Tickets by Status</h5>
+                        <p></p>
+                        <!-- Morris: Donut -->
+                        <div class="col-md-12">
+                            <div class="chart chart-md" id="morrisTicketStatus"></div>
+                        </div>
+                        <div class="col-md-12">
+                            <div id="legend_ticket_status" class="donut-legend" style="font-size:x-small"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="page-box">
+
+                    <div class="card-body">
+                        <h5>Tickets by Priority</h5>
+                        <p></p>
+                        <!-- Morris: Donut -->
+                        <div class="col-md-12">
+                            <div class="chart chart-md" id="morrisTicketPriority"></div>
+                        </div>
+                        <div class="col-md-12">
+                            <div id="legend_ticket_priority" class="donut-legend" style="font-size:x-small"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+        <!-- End Chart Row -->
     </div>
 </div>
 
 
 
 
-
-
-<div class="table-responsive" style="overflow-y:auto;height:600px;">
-    <table class="table display table-hover">
-        <thead class="">
-            <tr>
-                @* Table header *@
-                <th>Title</th>
-                <th>Developer</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @* Table body *@
-            @foreach (Ticket ticket in Model.Tickets!)
-            {
-                <tr>
-                    <td><a asp-action="Details" asp-controller="Tickets" asp-route-id="@ticket.Id" style="color:black"><strong>@ticket.Title</strong></a> </td>
-                    <td>
-                        @if (ticket.DeveloperUserId != null)
-                        {
-                            @ticket.DeveloperUser?.FullName
-                        }
-                        else
-                        {
-                            if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+<div class="row my-3">
+    <div class="col">
+        <div class="table-responsive" style="overflow-y:auto;height:600px;">
+            <table class="table display table-hover">
+                <thead class="">
+                    <tr>
+                        @* Table header *@
+                        <th>Title</th>
+                        <th>Developer</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @* Table body *@
+                    @foreach (Ticket ticket in Model.Tickets!)
+                    {
+                        <tr>
+                            <td><a asp-action="Details" asp-controller="Tickets" asp-route-id="@ticket.Id" style="color:black"><strong>@ticket.Title</strong></a> </td>
+                            <td>
+                                @if (ticket.DeveloperUserId != null)
+                                {
+                                    @ticket.DeveloperUser?.FullName
+                                }
+                                else
+                                {
+                                    if (User.IsInRole(nameof(BTRoles.Admin)) || User.IsInRole(nameof(BTRoles.ProjectManager)))
+                                    {
+                                        <a class="btn btn-xs btn-info" asp-action="AssignDeveloper" asp-controller="Tickets" asp-route-id="@ticket.Id">Assign Dev</a>
+                                    }
+                                }
+                            </td>
+                            @if (ticket.TicketStatus!.Name == BTTicketStatuses.New.ToString())
                             {
-                                <a class="btn btn-xs btn-info" asp-action="AssignDeveloper" asp-controller="Tickets" asp-route-id="@ticket.Id">Assign Dev</a>
+                                <td><span class="badge bg-success">@ticket.TicketStatus.Name </span></td>
                             }
-                        }
-                    </td>
-                    @if (ticket.TicketStatus!.Name == "New")
-                    {
-                        <td><span class="badge-success">@ticket.TicketStatus.Name </span></td>
+                            else
+                            {
+                                <td><span class="badge bg-primary">@ticket.TicketStatus.Name </span></td>
+                            }
+
+                            @if (ticket.TicketPriority!.Name == BTTicketPriorities.Urgent.ToString())
+                            {
+                                <td><span class="badge bg-danger">@ticket.TicketPriority!.Name </span></td>
+                            }
+                            else
+                            {
+                                <td><span class="badge bg-secondary">@ticket.TicketPriority!.Name </span></td>
+                            }
+                            
+                            <td>@ticket.Created.ToString("MM-dd-yyyy")</td>
+                            <td>
+                                <div class="row-col-1">
+                                    <a asp-controller="Tickets" asp-action="Details" asp-route-id="@ticket.Id" class="page-table-success" data-toggle="tooltip" title="View"><i class="fa fa-eye"></i></a>
+
+                                    <a asp-controller="Tickets" asp-action="Edit" asp-route-id="@ticket.Id" class="page-table-info" data-toggle="tooltip" title="Edit"><i class="fa fa-pencil"></i></a>
+
+                                    <a asp-controller="Tickets" asp-action="Archive" asp-route-id="@ticket.Id" class="page-table-info" data-toggle="tooltip" title="Archive"><i class="fa fa-archive"></i></a>
+                                </div>
+                            </td>
+                        </tr>
                     }
-                    else
-                    {
-                        <td><span class="badge-primary">@ticket.TicketStatus.Name </span></td>
-                    }
-                    <td><span class="badg">@ticket.TicketPriority!.Name </span></td>
-                    <td>@ticket.Created.ToString("MM-dd-yyyy")</td>
-                    <td>
-                        <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fs-5 bi-justify"></i></a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-@*<!-- Right Side Content Start -->
-<section id="content" class="seipkon-content-wrapper">
-    <div class="page-content">
-        <div class="container-fluid">
-
-
-            <!-- Chart Row Start -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="page-box">
-                        <div class="chart-example">
-                            <h3>Bar Chart</h3>
-                            <div id="morris_bar_chart"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="page-box">
-                        <div class="chart-example">
-                            <h3>Area Chart</h3>
-                            <div id="morris_area_chart"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- End Chart Row -->
-            <!-- Chart Row Start -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="page-box">
-                        <div class="chart-example">
-                            <h3>Line Chart</h3>
-                            <div id="morris_line_chart"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="page-box">
-
-                        <div class="card-body">
-                            <h5>Tickets by Priority</h5>
-                            <p>[Morris Charts]</p>
-                            <!-- Morris: Donut -->
-                            <div class="col-md-12">
-                                <div id="legend" class="donut-legend" style="font-size:x-small"></div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="chart chart-md" id="morrisTicketPriority"></div>
-                            </div>
-                        </div>
-                        @*<div class="chart-example">
-                        <h3>Donut Chart</h3>
-                        <div id="morris_donut_chart"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- End Chart Row -->
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
+</div>
 
 
-*@
+
+
+
+
 
 
 @section Scripts {
-    @* Morris Donut Chart *@
+                                Morris Donut Chart
     <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+
     <script>
 
-        var morrisDonutData = [{
-            label: "Low",
-            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Low)).Count()
-                                            }, {
-            label: "Medium",
-            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Medium)).Count()
-                                            }, {
-            label: "High",
-            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.High)).Count()
-                                            }, {
-            label: "Urgent",
-            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Urgent)).Count()
-                                            }];
+        var morrisDonutData_Status = [{
+            label: "New",
+            value: @Model.Tickets.Where(t=>t.TicketStatus.Name == nameof(BTTicketStatuses.New)).Count()
+                                                                                                            }, {
+            label: "Development",
+            value: @Model.Tickets.Where(t=>t.TicketStatus.Name == nameof(BTTicketStatuses.Development)).Count()
+                                                                                                            }, {
+            label: "Testing",
+            value: @Model.Tickets.Where(t=>t.TicketStatus.Name == nameof(BTTicketStatuses.Testing)).Count()
+                                                                                                            }, {
+            label: "Resolved",
+            value: @Model.Tickets.Where(t=>t.TicketStatus.Name == nameof(BTTicketStatuses.Resolved)).Count()
+                                                                                                            }];
 
 
         /*
         Morris: Donut
         */
-        if ($('#morrisTicketPriority').get(0)) {
+        if ($('#morrisTicketStatus').get(0)) {
             var donutChart = Morris.Donut({
                 resize: true,
-                element: 'morrisTicketPriority',
-                data: morrisDonutData,
+                element: 'morrisTicketStatus',
+                data: morrisDonutData_Status,
                 colors: ['#0088cc', '#734ba9', '#E36159', '#ff993b']
             });
 
@@ -235,7 +307,47 @@
                     .css('width', '20px')
                     .css('display', 'inline-block')
                     .css('margin', '10px');
-                $('#legend').append(legendItem)
+                $('#legend_ticket_status').append(legendItem)
+            });
+        };
+    </script>
+
+    <script>
+
+        var morrisDonutData_Priority = [{
+            label: "Low",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Low)).Count()
+                                                                                                            }, {
+            label: "Medium",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Medium)).Count()
+                                                                                                            }, {
+            label: "High",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.High)).Count()
+                                                                                                            }, {
+            label: "Urgent",
+            value: @Model.Tickets.Where(t=>t.TicketPriority.Name == nameof(BTTicketPriorities.Urgent)).Count()
+                                                                                                            }];
+
+
+        /*
+        Morris: Donut
+        */
+        if ($('#morrisTicketPriority').get(0)) {
+            var donutChart = Morris.Donut({
+                resize: true,
+                element: 'morrisTicketPriority',
+                data: morrisDonutData_Priority,
+                colors: ['#0088cc', '#734ba9', '#E36159', '#ff993b']
+            });
+
+            donutChart.options.data.forEach(function(label, i) {
+                var legendItem = $('<span></span>').text(label['label'] + ": " + label['value']).prepend('<span>&nbsp;</span>');
+                legendItem.find('span')
+                    .css('backgroundColor', donutChart.options.colors[i])
+                    .css('width', '20px')
+                    .css('display', 'inline-block')
+                    .css('margin', '10px');
+                $('#legend_ticket_priority').append(legendItem)
             });
         };
     </script>
