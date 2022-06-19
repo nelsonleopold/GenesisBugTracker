@@ -6,6 +6,7 @@ using GenesisBugTracker.Services.Interfaces;
 using GenesisBugTracker.Models.ViewModels;
 using GenesisBugTracker.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
+using GenesisBugTracker.Extensions;
 
 namespace GenesisBugTracker.Controllers
 {
@@ -28,9 +29,14 @@ namespace GenesisBugTracker.Controllers
         // GET: Companies
         public async Task<IActionResult> Index()
         {
-              return _context.Companies != null ? 
-                          View(await _context.Companies.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.Companies'  is null.");
+            int companyId = User.Identity!.GetCompanyId();
+
+            Company? company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == companyId);
+            if (company == null)
+            {
+                return NotFound();
+            }
+            return View(company);
         }
 
         // GET: Companies/CompanyMembers
@@ -186,14 +192,14 @@ namespace GenesisBugTracker.Controllers
             {
                 _context.Companies.Remove(company);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool CompanyExists(int id)
         {
-          return (_context.Companies?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Companies?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
