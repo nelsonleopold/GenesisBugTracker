@@ -37,16 +37,16 @@ namespace GenesisBugTracker.Controllers
             _fileService = fileService;
         }
 
-        //// GET: Projects
-        //[Authorize]
-        //public async Task<IActionResult> Index()
-        //{
-        //    int companyId = User.Identity!.GetCompanyId();
+        // GET: Projects
+        [Authorize]
+        public async Task<IActionResult> Index()
+        {
+            int companyId = User.Identity!.GetCompanyId();
 
-        //    List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
+            List<Project> projects = await _projectService.GetAllProjectsByCompanyIdAsync(companyId);
 
-        //    return View(projects);
-        //}
+            return View(projects);
+        }
 
         // GET: Projects/All
         public async Task<IActionResult> AllProjects()
@@ -154,7 +154,7 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/AssignProjectManager
-        [Authorize]
+        [Authorize(Roles = nameof(BTRoles.Admin))]
         public async Task<IActionResult> AssignProjectManager(int? id)
         {
             if (id == null || _context.Projects == null)
@@ -234,6 +234,7 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/Create
+        [Authorize(Roles = "Admin, ProjectManager")]
         public async Task<IActionResult> Create()
         {
             AddProjectWithPMViewModel model = new();
@@ -285,6 +286,7 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/Edit/5
+        [Authorize(Roles = "Admin, ProjectManager")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.Tickets == null)
@@ -391,6 +393,7 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/Archive/5
+        [Authorize(Roles = "Admin, ProjectManager")]
         public async Task<IActionResult> Archive(int? id)
         {
             if (id == null || _context.Projects == null)
@@ -427,6 +430,7 @@ namespace GenesisBugTracker.Controllers
         }
 
         // GET: Projects/Restore/5
+        [Authorize(Roles = "Admin, ProjectManager")]
         public async Task<IActionResult> Restore(int? id)
         {
             if (id == null || _context.Projects == null)

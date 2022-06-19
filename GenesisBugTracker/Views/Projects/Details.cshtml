@@ -129,9 +129,15 @@
                             <h2>Project Activity</h2>
                             <hr />
                         </div>
-                        <div class="body" style="overflow-y:auto;height:300px;background-color:antiquewhite">
+                        <div class="body" style="overflow-y:auto;height:300px">
                             @* Project Activity loop *@
-                            [Project Activity  e.g. Ticket History]
+                            @foreach (TicketHistory history in await HistoryService.GetProjectTicketsHistoriesAsync(Model.Id, companyId))
+                            {
+                                <p>@history.Ticket.Title</p>
+                                <p>@history.Description</p>
+                                <p>@history.User!.FullName on @history.Created.ToString("MMM dd, yyyy")</p>
+                                <br />
+                            }
                         </div>
 
                     </div>
@@ -189,15 +195,15 @@
                                                 <td><span class="">@ticket.TicketPriority!.Name </span></td>
                                                 <td>@ticket.Created.ToString("MM-dd-yyyy")</td>
                                                 <td>
-                                                    <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fs-5 bi-justify"></i></a>
+                                                    <a class="page-table-success" data-toggle="tooltip" title="View" asp-action="Details" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fa fa-eye"></i></a>
                                                     @if (ticket.DeveloperUserId == btUser.Id || ticket.SubmitterUserId == btUser.Id || (projectManager?.Id == btUser.Id) || User.IsInRole(nameof(BTRoles.Admin)))
                                                     {
-                                                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fs-5 bi-pencil"></i></a>
+                                                        <a class="page-table-info" data-toggle="tooltip" title="Edit" asp-action="Edit" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fa fa-pencil"></i></a>
                                                     }
 
                                                     @if (User.IsInRole("Admin") || (projectManager?.Id == btUser.Id))
                                                     {
-                                                        <a class="btn btn-sm btn-outline-danger"><i class="fs-5 bi-archive"></i></a>
+                                                        <a class="page-table-info" data-toggle="tooltip" title="Archive" asp-action="Archive" asp-controller="Tickets" asp-route-id="@ticket.Id"><i class="fa fa-archive"></i></a>
                                                     }
                                                 </td>
                                             </tr>

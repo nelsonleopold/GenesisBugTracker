@@ -172,6 +172,11 @@ namespace GenesisBugTracker.Services
 
                 List<BTUser> teamMembers = developers.Concat(submitters).Concat(admins).ToList();
 
+                if (teamMembers.Count == 0)
+                {
+                    return null!;
+                }
+
                 return teamMembers;
 
             }

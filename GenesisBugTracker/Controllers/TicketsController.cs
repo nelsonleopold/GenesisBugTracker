@@ -261,12 +261,12 @@ namespace GenesisBugTracker.Controllers
             return RedirectToAction("Details", new { id = model.TicketAttachment!.TicketId, message = statusMessage });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTicketComment(TicketComment ticketComment)
-        {
-            return View();
-        }
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> AddTicketComment(TicketComment ticketComment)
+        //{
+        //    return View();
+        //}
 
         public async Task<IActionResult> ShowFile(int id)
         {

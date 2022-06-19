@@ -7,20 +7,15 @@
 
 <h1>Unassigned Tickets</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-
-
 
 <div class="page-content">
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
                 <div class="page-box">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="overflow-y:auto;height:600px">
                         <table id="page-list" class="table table-hover">
-                            <thead>
+                            <thead style="position:sticky; top:0">
                                 <tr>
                                     <th>
                                         @Html.DisplayNameFor(model => model.Title)

@@ -1,16 +1,23 @@
 ﻿@model GenesisBugTracker.Models.ViewModels.AddTicketAttachmentViewModel
 
+@using GenesisBugTracker.Extensions
 @using GenesisBugTracker.Models.Enums
 @using GenesisBugTracker.Services.Interfaces
 @using Microsoft.AspNetCore.Identity
 
 @inject IBTFileService BTFileService
 @inject UserManager<BTUser> UserManager
+@inject IBTTicketHistoryService BTTicketHistory
 
 
 @{
     ViewData["Title"] = "Details";
     BTUser btUser = await UserManager.GetUserAsync(User);
+    int companyId = User.Identity!.GetCompanyId();
+    int projectId = Model.Ticket!.ProjectId;
+    int ticketId = Model.Ticket!.Id;
+    List<TicketHistory> histories = new();
+    histories = (await BTTicketHistory.GetProjectTicketsHistoriesAsync(projectId, companyId)).Where(h => h.TicketId == ticketId).ToList();
 }
 
 <h1>Ticket Details</h1>
@@ -103,7 +110,7 @@
                                                 <a href="javascript:void(0);">
                                                     @if (btUser?.AvatarData != null)
                                                     {
-                                                        <img class="media-object " src="data:image/*;base64,@(Convert.ToBase64String(btUser.AvatarData))" alt="">
+                                                        <img class="profile-avator" src="data:image/*;base64,@(Convert.ToBase64String(btUser.AvatarData))" alt="">
                                                     }
                                                     else
                                                     {
@@ -152,7 +159,7 @@
                                                 <label class="btn btn-outline-primary btn-sm">
                                                     <input asp-for="@(new TicketAttachment().FormFile)" type="file" class="form-control-file" />
                                                 </label>
-                                                <button type="submit" class="btn btn-outline-secondary btn-sm btn-md-flat">Submit</button>
+                                                <button type="submit" class="btn btn-primary btn-sm">Submit</button>
                                             </div>
                                         </form>
                                     </div>
@@ -194,11 +201,14 @@
                     <div class="card m-1 p-2">
                         <div class="card-header">
                             <h2>History</h2>
-                            <hr />
                         </div>
-                        <div class="card-body" style="overflow-y:auto;height:1000px;background-color:antiquewhite">
+                        <div class="card-body" style="overflow-y:auto;height:1000px">
                             @*Loop to show the history entries for the Ticket*@
-                            <h2>Coming Soon...</h2>
+                            @foreach (TicketHistory history in histories.OrderByDescending(h => h.Created))
+                            {
+                                <p class="pl-5">@history.Description</p>
+                                <p><small class="pl-5">By @history.User!.FullName on @history.Created.ToString("MMM dd, yyyy")</small></p>
+                            }
                         </div>
                     </div>
                 </div>

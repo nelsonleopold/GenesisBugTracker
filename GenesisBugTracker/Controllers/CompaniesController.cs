@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GenesisBugTracker.Data;
 using GenesisBugTracker.Models;
-using GenesisBugTracker.Services;
 using GenesisBugTracker.Services.Interfaces;
 using GenesisBugTracker.Models.ViewModels;
+using GenesisBugTracker.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GenesisBugTracker.Controllers
 {
+    [Authorize(Roles = nameof(BTRoles.Admin))]
     public class CompaniesController : Controller
     {
         private readonly ApplicationDbContext _context;
